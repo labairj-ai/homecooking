@@ -1,0 +1,16 @@
+[Unit]
+Description=Tailscale daemon (homecooking)
+After=network.target
+
+[Service]
+Type=notify
+ExecStartPre=/usr/bin/mkdir -p /run/tailscale-homecooking
+ExecStart=/usr/sbin/tailscaled \
+  --state=/var/lib/tailscale-homecooking/tailscaled.state \
+  --socket=/run/tailscale-homecooking/tailscaled.sock \
+  --port=41641
+RuntimeDirectory=tailscale-homecooking
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

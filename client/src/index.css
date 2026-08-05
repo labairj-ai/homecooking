@@ -1,0 +1,96 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #faf9f6;
+  --surface: #ffffff;
+  --surface2: #f4f2ed;
+  --border: #e4e0d8;
+  --text: #1a1816;
+  --text-muted: #6b6560;
+  --accent: #c84b2d;
+  --accent-hover: #a33a20;
+  --accent-light: #fdf0ec;
+  --cocktail: #2d6fa3;
+  --cocktail-light: #edf4fb;
+  --recipe: #3a7d44;
+  --recipe-light: #edf7ef;
+  --radius: 12px;
+  --radius-sm: 8px;
+  --shadow: 0 2px 12px rgba(0,0,0,0.08);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,0.12);
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+h1, h2, h3 { font-family: 'Playfair Display', serif; }
+
+a { color: inherit; text-decoration: none; }
+
+button {
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.875rem;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 0.5rem 1rem;
+  transition: all 0.15s;
+}
+
+input, textarea, select {
+  font-family: inherit;
+  font-size: 0.9rem;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0.6rem 0.8rem;
+  background: var(--surface);
+  color: var(--text);
+  width: 100%;
+  outline: none;
+  transition: border-color 0.15s;
+}
+input:focus, textarea:focus, select:focus { border-color: var(--accent); }
+
+textarea { resize: vertical; min-height: 120px; }
+
+label { font-size: 0.85rem; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 0.3rem; letter-spacing: 0.02em; text-transform: uppercase; }
+
+.btn-primary {
+  background: var(--accent);
+  color: #fff;
+  font-weight: 600;
+}
+.btn-primary:hover { background: var(--accent-hover); }
+
+.btn-secondary {
+  background: var(--surface2);
+  color: var(--text);
+  border: 1.5px solid var(--border);
+  font-weight: 500;
+}
+.btn-secondary:hover { background: var(--border); }
+
+.btn-danger {
+  background: transparent;
+  color: var(--accent);
+  border: 1.5px solid var(--accent);
+  font-weight: 500;
+}
+.btn-danger:hover { background: var(--accent-light); }
+
+.btn-icon {
+  background: transparent;
+  color: var(--text-muted);
+  padding: 0.4rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+}
+.btn-icon:hover { background: var(--surface2); color: var(--text); }

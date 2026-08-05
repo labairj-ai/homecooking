@@ -1,0 +1,5 @@
+node_modules/
+uploads/
+*.db
+client/dist/
+.DS_Store

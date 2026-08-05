@@ -1,0 +1,155 @@
+const express = require('express');
+const fs = require('fs');
+const path = require('path');
+const db = require('../db');
+
+const router = express.Router();
+
+function attachRelated(recipe) {
+  recipe.ingredients = db
+    .prepare('SELECT * FROM ingredients WHERE recipe_id = ? ORDER BY order_idx, id')
+    .all(recipe.id);
+  recipe.tags = db
+    .prepare('SELECT tag FROM tags WHERE recipe_id = ?')
+    .all(recipe.id)
+    .map((r) => r.tag);
+  return recipe;
+}
+
+// GET /api/recipes  (optional ?type=recipe|cocktail)
+router.get('/', (req, res) => {
+  const { type } = req.query;
+  const rows = type
+    ? db.prepare('SELECT * FROM recipes WHERE type = ? ORDER BY title COLLATE NOCASE').all(type)
+    : db.prepare('SELECT * FROM recipes ORDER BY title COLLATE NOCASE').all();
+  res.json(rows.map(attachRelated));
+});
+
+// GET /api/recipes/search?q=bourbon,lime
+router.get('/search', (req, res) => {
+  const terms = (req.query.q || '')
+    .split(',')
+    .map((t) => t.trim().toLowerCase())
+    .filter(Boolean);
+
+  if (!terms.length) {
+    return res.json([]);
+  }
+
+  // Find recipes that contain ALL queried ingredient terms
+  const placeholders = terms.map(() => 'LOWER(i.name) LIKE ?').join(' AND ');
+  const params = terms.map((t) => `%${t}%`);
+
+  const rows = db
+    .prepare(
+      `SELECT DISTINCT r.* FROM recipes r
+       JOIN ingredients i ON i.recipe_id = r.id
+       WHERE ${placeholders}
+       ORDER BY r.title COLLATE NOCASE`
+    )
+    .all(...params);
+
+  res.json(rows.map(attachRelated));
+});
+
+// GET /api/recipes/:id
+router.get('/:id', (req, res) => {
+  const recipe = db.prepare('SELECT * FROM recipes WHERE id = ?').get(req.params.id);
+  if (!recipe) return res.status(404).json({ error: 'Not found' });
+  res.json(attachRelated(recipe));
+});
+
+// POST /api/recipes
+router.post('/', (req, res) => {
+  const { title, type, description, instructions, notes, image_path, ingredients = [], tags = [] } = req.body;
+
+  if (!title || !type) return res.status(400).json({ error: 'title and type are required' });
+
+  const insert = db.transaction(() => {
+    const { lastInsertRowid } = db
+      .prepare(
+        `INSERT INTO recipes (title, type, description, instructions, notes, image_path)
+         VALUES (?, ?, ?, ?, ?, ?)`
+      )
+      .run(title, type, description || null, instructions || null, notes || null, image_path || null);
+
+    const id = lastInsertRowid;
+
+    const insertIng = db.prepare(
+      'INSERT INTO ingredients (recipe_id, name, amount, unit, order_idx) VALUES (?, ?, ?, ?, ?)'
+    );
+    ingredients.forEach((ing, idx) => {
+      insertIng.run(id, ing.name, ing.amount || null, ing.unit || null, idx);
+    });
+
+    const insertTag = db.prepare('INSERT INTO tags (recipe_id, tag) VALUES (?, ?)');
+    tags.forEach((tag) => insertTag.run(id, tag));
+
+    return db.prepare('SELECT * FROM recipes WHERE id = ?').get(id);
+  });
+
+  const recipe = insert();
+  res.status(201).json(attachRelated(recipe));
+});
+
+// PUT /api/recipes/:id
+router.put('/:id', (req, res) => {
+  const { title, type, description, instructions, notes, image_path, ingredients = [], tags = [] } = req.body;
+  const { id } = req.params;
+
+  const existing = db.prepare('SELECT * FROM recipes WHERE id = ?').get(id);
+  if (!existing) return res.status(404).json({ error: 'Not found' });
+
+  const update = db.transaction(() => {
+    // If image changed and old image exists, delete old file
+    if (image_path !== undefined && existing.image_path && existing.image_path !== image_path) {
+      const oldFile = path.join(__dirname, '..', '..', 'uploads', existing.image_path);
+      if (fs.existsSync(oldFile)) fs.unlinkSync(oldFile);
+    }
+
+    db.prepare(
+      `UPDATE recipes SET title=?, type=?, description=?, instructions=?, notes=?, image_path=?,
+       updated_at=datetime('now') WHERE id=?`
+    ).run(
+      title ?? existing.title,
+      type ?? existing.type,
+      description !== undefined ? description : existing.description,
+      instructions !== undefined ? instructions : existing.instructions,
+      notes !== undefined ? notes : existing.notes,
+      image_path !== undefined ? image_path : existing.image_path,
+      id
+    );
+
+    db.prepare('DELETE FROM ingredients WHERE recipe_id = ?').run(id);
+    const insertIng = db.prepare(
+      'INSERT INTO ingredients (recipe_id, name, amount, unit, order_idx) VALUES (?, ?, ?, ?, ?)'
+    );
+    ingredients.forEach((ing, idx) => {
+      insertIng.run(id, ing.name, ing.amount || null, ing.unit || null, idx);
+    });
+
+    db.prepare('DELETE FROM tags WHERE recipe_id = ?').run(id);
+    const insertTag = db.prepare('INSERT INTO tags (recipe_id, tag) VALUES (?, ?)');
+    tags.forEach((tag) => insertTag.run(id, tag));
+  });
+
+  update();
+  const recipe = db.prepare('SELECT * FROM recipes WHERE id = ?').get(id);
+  res.json(attachRelated(recipe));
+});
+
+// DELETE /api/recipes/:id
+router.delete('/:id', (req, res) => {
+  const recipe = db.prepare('SELECT * FROM recipes WHERE id = ?').get(req.params.id);
+  if (!recipe) return res.status(404).json({ error: 'Not found' });
+
+  if (recipe.image_path) {
+    const file = path.join(__dirname, '..', '..', 'uploads', recipe.image_path);
+    if (fs.existsSync(file)) fs.unlinkSync(file);
+  }
+
+  db.prepare('DELETE FROM recipes WHERE id = ?').run(req.params.id);
+  res.json({ ok: true });
+});
+
+module.exports = router;

@@ -1,0 +1,18 @@
+.type-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.2rem 0.65rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+.type-badge--recipe {
+  background: var(--recipe-light);
+  color: var(--recipe);
+}
+.type-badge--cocktail {
+  background: var(--cocktail-light);
+  color: var(--cocktail);
+}

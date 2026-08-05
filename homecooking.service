@@ -1,0 +1,17 @@
+[Unit]
+Description=Home Cooking app
+After=network.target
+
+[Service]
+Type=simple
+User=optiplex
+WorkingDirectory=/home/optiplex/homecooking
+ExecStart=/usr/bin/node server/index.js
+Restart=on-failure
+RestartSec=5
+Environment=NODE_ENV=production
+Environment=PORT=4100
+Environment=DB_PATH=/home/optiplex/homecooking/homecooking.db
+
+[Install]
+WantedBy=multi-user.target
