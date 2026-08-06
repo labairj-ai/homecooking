@@ -1,16 +1,24 @@
 # Homecooking
 
-Personal recipe and cocktail manager. Browse, add, and edit recipes, cocktails, and drinks with photos, ingredients, rich-text instructions, and tags.
+Personal recipe and drink manager split into two siloed sections: **My Kitchen** for recipes and cocktails, and **My Cellar** for wine, beer, and spirits.
 
 ## Features
 
-- **Recipes, Cocktails & Drinks** — separate types with subcategories (Breakfast, Lunch, Dinner, Dessert / Wine, Beer, Spirits)
-- **Photo support** — upload photos per recipe; click the preview to set a focal point controlling which part of the photo shows on cards
-- **Rich text editor** — TipTap-powered instructions and notes with formatting
-- **Ingredients** — amounts, units, and names; drinks skip the ingredient list
-- **Tags** — freeform tags with keyboard-friendly input
-- **Favorites** — star/unstar drinks
+### My Kitchen (`/`)
+- **Recipes & Cocktails** — separate types with subcategories (Breakfast, Lunch, Dinner, Dessert)
 - **Ingredient search** — find recipes that contain all queried ingredients
+- **Rich text editor** — TipTap-powered instructions and notes with formatting
+- **Ingredients** — amounts, units, and names
+
+### My Cellar (`/cellar`)
+- **Wine, Beer & Spirits** — bottle/drink entries with subcategory filters
+- **Favorites** — star/unstar drinks; filter to favorites only
+- **Tasting Notes** — rich text notes per drink
+
+### Shared
+- **Photo support** — upload a photo per entry; click the preview to set a **focal point** (x/y %) that controls which part of the photo shows on cards and the detail hero image
+- **Tags** — freeform tags with keyboard-friendly input
+- **Mobile nav** — fixed bottom tab bar on small screens (Kitchen / Cellar / Add), top nav on desktop
 
 ## Stack
 
@@ -27,6 +35,14 @@ npm run dev
 
 Runs the Express server and Vite dev server concurrently. App opens on the port shown in the terminal.
 
+## Deploy
+
+```bash
+npm run deploy
+```
+
+Builds the client, rsyncs to the optiplex server, installs deps, and restarts the systemd service.
+
 ## Data
 
-SQLite database at `homecooking.db` (auto-created on first run). Uploaded images stored in `uploads/`.
+SQLite database at `homecooking.db` (auto-created on first run, versioned migrations via `PRAGMA user_version`). Uploaded images stored in `uploads/`.
