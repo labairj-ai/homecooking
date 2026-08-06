@@ -1,0 +1,100 @@
+.rich-editor {
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  transition: border-color 0.15s;
+  overflow: hidden;
+}
+.rich-editor:focus-within { border-color: var(--accent); }
+
+.rt-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 0.45rem 0.6rem;
+  border-bottom: 1.5px solid var(--border);
+  background: var(--surface2);
+}
+
+.rt-btn {
+  background: transparent;
+  border: none;
+  border-radius: 5px;
+  padding: 0.3rem 0.55rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.12s;
+  line-height: 1;
+  min-width: 28px;
+  text-align: center;
+}
+.rt-btn:hover { background: var(--border); color: var(--text); }
+.rt-btn.active { background: var(--accent-light); color: var(--accent); }
+
+.rt-divider {
+  width: 1px;
+  height: 18px;
+  background: var(--border);
+  margin: 0 0.2rem;
+  flex-shrink: 0;
+}
+
+/* TipTap editor area */
+.rich-editor .ProseMirror {
+  padding: 0.75rem 0.9rem;
+  min-height: 140px;
+  outline: none;
+  font-size: 0.93rem;
+  line-height: 1.75;
+  color: var(--text);
+}
+
+.rich-editor .ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  color: var(--text-muted);
+  pointer-events: none;
+  float: left;
+  height: 0;
+}
+
+/* Rich content styles inside editor and detail view */
+.rich-editor .ProseMirror h2,
+.rich-content h2 {
+  font-size: 1.2rem;
+  margin: 1rem 0 0.4rem;
+  color: var(--text);
+}
+.rich-editor .ProseMirror h3,
+.rich-content h3 {
+  font-size: 1rem;
+  margin: 0.85rem 0 0.3rem;
+  color: var(--text);
+}
+.rich-editor .ProseMirror p,
+.rich-content p { margin-bottom: 0.6rem; }
+.rich-editor .ProseMirror ul,
+.rich-editor .ProseMirror ol,
+.rich-content ul,
+.rich-content ol {
+  padding-left: 1.5rem;
+  margin-bottom: 0.6rem;
+}
+.rich-editor .ProseMirror li,
+.rich-content li { margin-bottom: 0.25rem; }
+.rich-editor .ProseMirror blockquote,
+.rich-content blockquote {
+  border-left: 3px solid var(--accent);
+  padding-left: 0.9rem;
+  margin: 0.5rem 0;
+  color: var(--text-muted);
+  font-style: italic;
+}
+.rich-editor .ProseMirror strong,
+.rich-content strong { font-weight: 700; }
+.rich-editor .ProseMirror em,
+.rich-content em { font-style: italic; }
+.rich-editor .ProseMirror u,
+.rich-content u { text-decoration: underline; }

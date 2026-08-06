@@ -89,14 +89,14 @@ export default function RecipeDetail() {
         {recipe.instructions && (
           <section className="detail-section">
             <h2>Instructions</h2>
-            <div className="instructions">{recipe.instructions}</div>
+            <div className="rich-content" dangerouslySetInnerHTML={{ __html: recipe.instructions }} />
           </section>
         )}
 
         {recipe.notes && (
           <section className="detail-section notes-section">
             <h2>Notes</h2>
-            <div className="notes">{recipe.notes}</div>
+            <div className="rich-content" dangerouslySetInnerHTML={{ __html: recipe.notes }} />
           </section>
         )}
 

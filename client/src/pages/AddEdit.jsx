@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { api } from '../api';
+import RichEditor from '../components/RichEditor';
 import './AddEdit.css';
 
 const EMPTY_ING = () => ({ name: '', amount: '', unit: '' });
@@ -239,19 +240,18 @@ export default function AddEdit() {
 
         <div className="form-field">
           <label>Instructions</label>
-          <textarea
+          <RichEditor
             value={form.instructions}
-            onChange={(e) => setField('instructions', e.target.value)}
+            onChange={(val) => setField('instructions', val)}
             placeholder="Step-by-step instructions…"
-            style={{ minHeight: 160 }}
           />
         </div>
 
         <div className="form-field">
           <label>Notes</label>
-          <textarea
+          <RichEditor
             value={form.notes}
-            onChange={(e) => setField('notes', e.target.value)}
+            onChange={(val) => setField('notes', val)}
             placeholder="Tips, substitutions, personal notes…"
           />
         </div>

@@ -51,8 +51,7 @@
 .ing-amount { min-width: 80px; font-weight: 600; color: var(--accent); font-size: 0.9rem; }
 .ing-name { color: var(--text); font-size: 0.9rem; }
 
-.instructions, .notes {
-  white-space: pre-wrap;
+.rich-content {
   line-height: 1.8;
   font-size: 0.95rem;
   color: var(--text);
