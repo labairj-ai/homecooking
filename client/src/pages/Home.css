@@ -43,7 +43,7 @@
   padding: 0 0.1rem;
   border-radius: 50%;
 }
-.search-chip-remove:hover { background: rgba(200,75,45,0.15); }
+.search-chip-remove:hover { background: var(--accent-light); }
 
 .filter-tabs {
   display: flex;
