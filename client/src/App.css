@@ -13,5 +13,5 @@
 }
 
 @media (max-width: 600px) {
-  .main-content { padding: 1rem; }
+  .main-content { padding: 1rem 1rem calc(60px + 1rem); }
 }

@@ -42,3 +42,48 @@
 }
 .nav-link:hover { color: var(--text); background: var(--surface2); }
 .nav-link.active { color: var(--text); background: var(--surface2); font-weight: 600; }
+
+/* Mobile bottom nav */
+.nav-mobile-bottom { display: none; }
+
+@media (max-width: 600px) {
+  .nav-links { display: none; }
+  .nav-add-btn { display: none; }
+
+  .nav-mobile-bottom {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    height: 60px;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    box-shadow: 0 -2px 8px rgba(0,0,0,0.08);
+  }
+
+  .nav-mobile-tab {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    color: var(--text-muted);
+    font-size: 0.875rem;
+    padding: 6px 2px;
+    transition: color 0.15s;
+  }
+  .nav-mobile-tab.active { color: var(--accent); }
+
+  .nav-mobile-icon { font-size: 1.3rem; line-height: 1; }
+
+  .nav-mobile-label {
+    font-size: 0.6rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+}
