@@ -16,6 +16,10 @@
   background: var(--cocktail-light);
   color: var(--cocktail);
 }
+.type-badge--drink {
+  background: var(--drink-light);
+  color: var(--drink);
+}
 
 .subcategory-badge {
   display: inline-flex;

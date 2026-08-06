@@ -20,7 +20,25 @@
   gap: 0.75rem;
 }
 .detail-meta { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
-.detail-actions { display: flex; gap: 0.5rem; }
+.detail-actions { display: flex; gap: 0.5rem; align-items: center; }
+
+.fav-toggle-btn {
+  background: transparent;
+  border: 1.5px solid var(--drink);
+  color: var(--drink);
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  padding: 0;
+}
+.fav-toggle-btn:hover { background: var(--drink-light); }
+.fav-toggle-btn--on { background: var(--drink-light); }
 
 .detail-title { font-size: 2rem; line-height: 1.2; }
 

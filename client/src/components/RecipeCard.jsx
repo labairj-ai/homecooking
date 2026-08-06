@@ -2,9 +2,18 @@ import { Link } from 'react-router-dom';
 import TypeBadge from './TypeBadge';
 import './RecipeCard.css';
 
-export default function RecipeCard({ recipe }) {
+const PLACEHOLDERS = { cocktail: '🍸', drink: '🥂', recipe: '🍽️' };
+
+export default function RecipeCard({ recipe, onToggleFavorite }) {
   const previewIngredients = recipe.ingredients.slice(0, 3);
   const more = recipe.ingredients.length - previewIngredients.length;
+  const isDrink = recipe.type === 'drink';
+
+  function handleFavClick(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    onToggleFavorite?.(recipe.id);
+  }
 
   return (
     <Link to={`/recipe/${recipe.id}`} className="recipe-card">
@@ -13,8 +22,18 @@ export default function RecipeCard({ recipe }) {
           <img src={`/uploads/${recipe.image_path}`} alt={recipe.title} />
         ) : (
           <div className="card-image-placeholder">
-            {recipe.type === 'cocktail' ? '🍸' : '🍽️'}
+            {PLACEHOLDERS[recipe.type] ?? '🍽️'}
           </div>
+        )}
+        {isDrink && (
+          <button
+            type="button"
+            className={`fav-btn ${recipe.is_favorite ? 'fav-btn--on' : ''}`}
+            onClick={handleFavClick}
+            title={recipe.is_favorite ? 'Remove from favorites' : 'Add to favorites'}
+          >
+            {recipe.is_favorite ? '★' : '☆'}
+          </button>
         )}
       </div>
       <div className="card-body">

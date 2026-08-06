@@ -1,9 +1,8 @@
 import './TypeBadge.css';
 
 export default function TypeBadge({ type }) {
+  const label = type === 'cocktail' ? '🍸 Cocktail' : type === 'drink' ? '🥂 Drink' : '🍽️ Recipe';
   return (
-    <span className={`type-badge type-badge--${type}`}>
-      {type === 'cocktail' ? '🍸 Cocktail' : '🍽️ Recipe'}
-    </span>
+    <span className={`type-badge type-badge--${type}`}>{label}</span>
   );
 }

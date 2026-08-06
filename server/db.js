@@ -8,7 +8,7 @@ const db = new Database(DB_PATH);
 db.pragma('journal_mode = WAL');
 db.pragma('foreign_keys = ON');
 
-// Migration: add subcategory to existing DBs
+// Legacy migration: add subcategory to existing DBs (no-op if already present)
 try { db.exec(`ALTER TABLE recipes ADD COLUMN subcategory TEXT`); } catch (_) {}
 
 db.exec(`
@@ -40,5 +40,37 @@ db.exec(`
     tag       TEXT NOT NULL
   );
 `);
+
+// Versioned migrations using SQLite user_version pragma
+const userVersion = db.pragma('user_version', { simple: true });
+
+if (userVersion < 1) {
+  // Add is_favorite column and expand type CHECK to include 'drink'.
+  // SQLite can't alter CHECK constraints in place, so we recreate the table.
+  db.pragma('foreign_keys = OFF');
+  db.exec(`
+    CREATE TABLE recipes_new (
+      id          INTEGER PRIMARY KEY AUTOINCREMENT,
+      title       TEXT NOT NULL,
+      type        TEXT NOT NULL CHECK(type IN ('recipe','cocktail','drink')),
+      subcategory TEXT,
+      description TEXT,
+      instructions TEXT,
+      notes       TEXT,
+      is_favorite INTEGER NOT NULL DEFAULT 0,
+      image_path  TEXT,
+      created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at  TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    INSERT INTO recipes_new
+      (id, title, type, subcategory, description, instructions, notes, image_path, created_at, updated_at, is_favorite)
+      SELECT id, title, type, subcategory, description, instructions, notes, image_path, created_at, updated_at, 0
+      FROM recipes;
+    DROP TABLE recipes;
+    ALTER TABLE recipes_new RENAME TO recipes;
+  `);
+  db.pragma('foreign_keys = ON');
+  db.pragma('user_version = 1');
+}
 
 module.exports = db;

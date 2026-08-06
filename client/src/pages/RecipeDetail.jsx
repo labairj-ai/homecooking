@@ -12,6 +12,11 @@ export default function RecipeDetail() {
   const [error, setError] = useState(null);
   const [deleting, setDeleting] = useState(false);
 
+  async function handleToggleFavorite() {
+    const { is_favorite } = await api.toggleFavorite(id);
+    setRecipe((r) => ({ ...r, is_favorite }));
+  }
+
   useEffect(() => {
     api.getRecipe(id)
       .then(setRecipe)
@@ -55,6 +60,16 @@ export default function RecipeDetail() {
             ))}
           </div>
           <div className="detail-actions">
+            {recipe.type === 'drink' && (
+              <button
+                type="button"
+                className={`fav-toggle-btn ${recipe.is_favorite ? 'fav-toggle-btn--on' : ''}`}
+                onClick={handleToggleFavorite}
+                title={recipe.is_favorite ? 'Remove from favorites' : 'Add to favorites'}
+              >
+                {recipe.is_favorite ? '★' : '☆'}
+              </button>
+            )}
             <Link to={`/edit/${recipe.id}`} className="btn-secondary" style={{ padding: '0.45rem 1rem', borderRadius: 8, border: '1.5px solid var(--border)', fontSize: '0.875rem', fontWeight: 500 }}>
               Edit
             </Link>
@@ -95,7 +110,7 @@ export default function RecipeDetail() {
 
         {recipe.notes && (
           <section className="detail-section notes-section">
-            <h2>Notes</h2>
+            <h2>{recipe.type === 'drink' ? 'Tasting Notes' : 'Notes'}</h2>
             <div className="rich-content" dangerouslySetInnerHTML={{ __html: recipe.notes }} />
           </section>
         )}

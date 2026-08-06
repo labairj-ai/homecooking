@@ -34,6 +34,9 @@ export const api = {
   deleteRecipe: (id) =>
     fetch(`${BASE}/recipes/${id}`, { method: 'DELETE' }).then(json),
 
+  toggleFavorite: (id) =>
+    fetch(`${BASE}/recipes/${id}/favorite`, { method: 'PATCH' }).then(json),
+
   uploadImage: (file) => {
     const form = new FormData();
     form.append('image', file);

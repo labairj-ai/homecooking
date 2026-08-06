@@ -25,6 +25,7 @@ export default function AddEdit() {
     instructions: '',
     notes: '',
     image_path: null,
+    is_favorite: false,
   });
   const [ingredients, setIngredients] = useState([EMPTY_ING()]);
   const [tags, setTags] = useState([]);
@@ -46,6 +47,7 @@ export default function AddEdit() {
         instructions: recipe.instructions || '',
         notes: recipe.notes || '',
         image_path: recipe.image_path || null,
+        is_favorite: Boolean(recipe.is_favorite),
       });
       setIngredients(recipe.ingredients.length ? recipe.ingredients : [EMPTY_ING()]);
       setTags(recipe.tags || []);
@@ -142,9 +144,10 @@ export default function AddEdit() {
           </div>
           <div className="form-field">
             <label>Type *</label>
-            <select value={form.type} onChange={(e) => { setField('type', e.target.value); if (e.target.value !== 'recipe') setField('subcategory', ''); }}>
+            <select value={form.type} onChange={(e) => { setField('type', e.target.value); setField('subcategory', ''); }}>
               <option value="recipe">🍽️ Recipe</option>
               <option value="cocktail">🍸 Cocktail</option>
+              <option value="drink">🥂 Drink</option>
             </select>
           </div>
         </div>
@@ -158,6 +161,18 @@ export default function AddEdit() {
               <option value="lunch">🥗 Lunch</option>
               <option value="dinner">🍲 Dinner</option>
               <option value="dessert">🍰 Dessert</option>
+            </select>
+          </div>
+        )}
+
+        {form.type === 'drink' && (
+          <div className="form-field">
+            <label>Category</label>
+            <select value={form.subcategory} onChange={(e) => setField('subcategory', e.target.value)}>
+              <option value="">— select category —</option>
+              <option value="wine">🍷 Wine</option>
+              <option value="beer">🍺 Beer</option>
+              <option value="spirits">🥃 Spirits</option>
             </select>
           </div>
         )}
@@ -196,65 +211,82 @@ export default function AddEdit() {
           </div>
         </div>
 
-        <div className="form-field">
-          <label>Ingredients</label>
-          <div className="ingredients-editor">
-            {ingredients.map((ing, idx) => (
-              <div key={idx} className="ing-row">
-                <input
-                  className="ing-input ing-amount"
-                  value={ing.amount}
-                  onChange={(e) => setIng(idx, 'amount', e.target.value)}
-                  placeholder="Amount"
-                />
-                <select
-                  className="ing-input ing-unit"
-                  value={ing.unit}
-                  onChange={(e) => setIng(idx, 'unit', e.target.value)}
-                >
-                  {UNITS.map((u) => (
-                    <option key={u} value={u}>{u || '— unit —'}</option>
-                  ))}
-                </select>
-                <input
-                  className="ing-input ing-name"
-                  value={ing.name}
-                  onChange={(e) => setIng(idx, 'name', e.target.value)}
-                  placeholder="Ingredient name *"
-                />
-                <button
-                  type="button"
-                  className="btn-icon ing-remove"
-                  onClick={() => removeIng(idx)}
-                  title="Remove"
-                >
-                  ×
-                </button>
-              </div>
-            ))}
-            <button type="button" className="btn-secondary add-ing-btn" onClick={addIng}>
-              + Add Ingredient
-            </button>
+        {form.type !== 'drink' && (
+          <div className="form-field">
+            <label>Ingredients</label>
+            <div className="ingredients-editor">
+              {ingredients.map((ing, idx) => (
+                <div key={idx} className="ing-row">
+                  <input
+                    className="ing-input ing-amount"
+                    value={ing.amount}
+                    onChange={(e) => setIng(idx, 'amount', e.target.value)}
+                    placeholder="Amount"
+                  />
+                  <select
+                    className="ing-input ing-unit"
+                    value={ing.unit}
+                    onChange={(e) => setIng(idx, 'unit', e.target.value)}
+                  >
+                    {UNITS.map((u) => (
+                      <option key={u} value={u}>{u || '— unit —'}</option>
+                    ))}
+                  </select>
+                  <input
+                    className="ing-input ing-name"
+                    value={ing.name}
+                    onChange={(e) => setIng(idx, 'name', e.target.value)}
+                    placeholder="Ingredient name *"
+                  />
+                  <button
+                    type="button"
+                    className="btn-icon ing-remove"
+                    onClick={() => removeIng(idx)}
+                    title="Remove"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+              <button type="button" className="btn-secondary add-ing-btn" onClick={addIng}>
+                + Add Ingredient
+              </button>
+            </div>
           </div>
-        </div>
+        )}
+
+        {form.type !== 'drink' && (
+          <div className="form-field">
+            <label>Instructions</label>
+            <RichEditor
+              value={form.instructions}
+              onChange={(val) => setField('instructions', val)}
+              placeholder="Step-by-step instructions…"
+            />
+          </div>
+        )}
 
         <div className="form-field">
-          <label>Instructions</label>
-          <RichEditor
-            value={form.instructions}
-            onChange={(val) => setField('instructions', val)}
-            placeholder="Step-by-step instructions…"
-          />
-        </div>
-
-        <div className="form-field">
-          <label>Notes</label>
+          <label>{form.type === 'drink' ? 'Tasting Notes' : 'Notes'}</label>
           <RichEditor
             value={form.notes}
             onChange={(val) => setField('notes', val)}
-            placeholder="Tips, substitutions, personal notes…"
+            placeholder={form.type === 'drink' ? 'Aroma, flavor, finish…' : 'Tips, substitutions, personal notes…'}
           />
         </div>
+
+        {form.type === 'drink' && (
+          <div className="form-field form-field--inline">
+            <label className="checkbox-label">
+              <input
+                type="checkbox"
+                checked={form.is_favorite}
+                onChange={(e) => setField('is_favorite', e.target.checked)}
+              />
+              Mark as Favorite ★
+            </label>
+          </div>
+        )}
 
         <div className="form-field">
           <label>Tags</label>

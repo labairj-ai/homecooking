@@ -117,6 +117,23 @@
 }
 .tag-chip button:hover { color: var(--accent); }
 
+.form-field--inline { flex-direction: row; align-items: center; }
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text);
+  text-transform: none;
+  letter-spacing: 0;
+  cursor: pointer;
+}
+.checkbox-label input[type="checkbox"] {
+  width: auto;
+  accent-color: var(--drink);
+}
+
 .form-actions {
   display: flex;
   justify-content: flex-end;

@@ -70,6 +70,9 @@
 }
 .filter-tab:hover { border-color: var(--accent); color: var(--accent); }
 .filter-tab.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+.fav-filter-tab { color: var(--drink); border-color: var(--drink); }
+.fav-filter-tab:hover { background: var(--drink-light); color: var(--drink); border-color: var(--drink); }
+.fav-filter-tab.active { background: var(--drink); border-color: var(--drink); color: #fff; }
 
 .recipe-grid {
   display: grid;
