@@ -47,6 +47,9 @@ export default function RecipeDetail() {
         <div className="detail-top">
           <div className="detail-meta">
             <TypeBadge type={recipe.type} />
+            {recipe.subcategory && (
+              <span className="subcategory-badge">{recipe.subcategory}</span>
+            )}
             {recipe.tags?.map((tag) => (
               <span key={tag} className="tag">{tag}</span>
             ))}

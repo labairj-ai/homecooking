@@ -61,17 +61,17 @@ router.get('/:id', (req, res) => {
 
 // POST /api/recipes
 router.post('/', (req, res) => {
-  const { title, type, description, instructions, notes, image_path, ingredients = [], tags = [] } = req.body;
+  const { title, type, subcategory, description, instructions, notes, image_path, ingredients = [], tags = [] } = req.body;
 
   if (!title || !type) return res.status(400).json({ error: 'title and type are required' });
 
   const insert = db.transaction(() => {
     const { lastInsertRowid } = db
       .prepare(
-        `INSERT INTO recipes (title, type, description, instructions, notes, image_path)
-         VALUES (?, ?, ?, ?, ?, ?)`
+        `INSERT INTO recipes (title, type, subcategory, description, instructions, notes, image_path)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`
       )
-      .run(title, type, description || null, instructions || null, notes || null, image_path || null);
+      .run(title, type, subcategory || null, description || null, instructions || null, notes || null, image_path || null);
 
     const id = lastInsertRowid;
 
@@ -94,7 +94,7 @@ router.post('/', (req, res) => {
 
 // PUT /api/recipes/:id
 router.put('/:id', (req, res) => {
-  const { title, type, description, instructions, notes, image_path, ingredients = [], tags = [] } = req.body;
+  const { title, type, subcategory, description, instructions, notes, image_path, ingredients = [], tags = [] } = req.body;
   const { id } = req.params;
 
   const existing = db.prepare('SELECT * FROM recipes WHERE id = ?').get(id);
@@ -108,11 +108,12 @@ router.put('/:id', (req, res) => {
     }
 
     db.prepare(
-      `UPDATE recipes SET title=?, type=?, description=?, instructions=?, notes=?, image_path=?,
+      `UPDATE recipes SET title=?, type=?, subcategory=?, description=?, instructions=?, notes=?, image_path=?,
        updated_at=datetime('now') WHERE id=?`
     ).run(
       title ?? existing.title,
       type ?? existing.type,
+      subcategory !== undefined ? (subcategory || null) : existing.subcategory,
       description !== undefined ? description : existing.description,
       instructions !== undefined ? instructions : existing.instructions,
       notes !== undefined ? notes : existing.notes,

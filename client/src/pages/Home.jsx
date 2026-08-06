@@ -9,10 +9,19 @@ const FILTERS = [
   { label: 'Cocktails', value: 'cocktail' },
 ];
 
+const SUBCATEGORIES = [
+  { label: 'All', value: '' },
+  { label: '🍳 Breakfast', value: 'breakfast' },
+  { label: '🥗 Lunch', value: 'lunch' },
+  { label: '🍲 Dinner', value: 'dinner' },
+  { label: '🍰 Dessert', value: 'dessert' },
+];
+
 export default function Home() {
   const [recipes, setRecipes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('');
+  const [subFilter, setSubFilter] = useState('');
   const [searchInput, setSearchInput] = useState('');
   const [searchTerms, setSearchTerms] = useState([]);
   const [termDraft, setTermDraft] = useState('');
@@ -58,7 +67,11 @@ export default function Home() {
 
   const displayed = searchTerms.length > 0
     ? recipes
-    : recipes.filter((r) => !filter || r.type === filter);
+    : recipes.filter((r) => {
+        if (filter && r.type !== filter) return false;
+        if (filter === 'recipe' && subFilter && r.subcategory !== subFilter) return false;
+        return true;
+      });
 
   return (
     <div className="home">
@@ -91,17 +104,32 @@ export default function Home() {
       </div>
 
       {searchTerms.length === 0 && (
-        <div className="filter-tabs">
-          {FILTERS.map((f) => (
-            <button
-              key={f.value}
-              className={`filter-tab ${filter === f.value ? 'active' : ''}`}
-              onClick={() => setFilter(f.value)}
-            >
-              {f.label}
-            </button>
-          ))}
-        </div>
+        <>
+          <div className="filter-tabs">
+            {FILTERS.map((f) => (
+              <button
+                key={f.value}
+                className={`filter-tab ${filter === f.value ? 'active' : ''}`}
+                onClick={() => { setFilter(f.value); setSubFilter(''); }}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+          {filter === 'recipe' && (
+            <div className="filter-tabs subfilter-tabs">
+              {SUBCATEGORIES.map((s) => (
+                <button
+                  key={s.value}
+                  className={`filter-tab ${subFilter === s.value ? 'active' : ''}`}
+                  onClick={() => setSubFilter(s.value)}
+                >
+                  {s.label}
+                </button>
+              ))}
+            </div>
+          )}
+        </>
       )}
 
       {loading && <div className="state-msg">Loading…</div>}

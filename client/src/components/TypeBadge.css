@@ -16,3 +16,16 @@
   background: var(--cocktail-light);
   color: var(--cocktail);
 }
+
+.subcategory-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.65rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  background: var(--surface2);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  text-transform: capitalize;
+}

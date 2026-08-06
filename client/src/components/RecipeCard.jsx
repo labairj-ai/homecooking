@@ -20,6 +20,9 @@ export default function RecipeCard({ recipe }) {
       <div className="card-body">
         <div className="card-header">
           <TypeBadge type={recipe.type} />
+          {recipe.subcategory && (
+            <span className="subcategory-badge">{recipe.subcategory}</span>
+          )}
         </div>
         <h3 className="card-title">{recipe.title}</h3>
         {recipe.description && (

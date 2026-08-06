@@ -8,11 +8,15 @@ const db = new Database(DB_PATH);
 db.pragma('journal_mode = WAL');
 db.pragma('foreign_keys = ON');
 
+// Migration: add subcategory to existing DBs
+try { db.exec(`ALTER TABLE recipes ADD COLUMN subcategory TEXT`); } catch (_) {}
+
 db.exec(`
   CREATE TABLE IF NOT EXISTS recipes (
     id          INTEGER PRIMARY KEY AUTOINCREMENT,
     title       TEXT NOT NULL,
     type        TEXT NOT NULL CHECK(type IN ('recipe','cocktail')),
+    subcategory TEXT,
     description TEXT,
     instructions TEXT,
     notes       TEXT,

@@ -19,6 +19,7 @@ export default function AddEdit() {
   const [form, setForm] = useState({
     title: '',
     type: 'recipe',
+    subcategory: '',
     description: '',
     instructions: '',
     notes: '',
@@ -39,6 +40,7 @@ export default function AddEdit() {
       setForm({
         title: recipe.title,
         type: recipe.type,
+        subcategory: recipe.subcategory || '',
         description: recipe.description || '',
         instructions: recipe.instructions || '',
         notes: recipe.notes || '',
@@ -139,12 +141,25 @@ export default function AddEdit() {
           </div>
           <div className="form-field">
             <label>Type *</label>
-            <select value={form.type} onChange={(e) => setField('type', e.target.value)}>
+            <select value={form.type} onChange={(e) => { setField('type', e.target.value); if (e.target.value !== 'recipe') setField('subcategory', ''); }}>
               <option value="recipe">🍽️ Recipe</option>
               <option value="cocktail">🍸 Cocktail</option>
             </select>
           </div>
         </div>
+
+        {form.type === 'recipe' && (
+          <div className="form-field">
+            <label>Category</label>
+            <select value={form.subcategory} onChange={(e) => setField('subcategory', e.target.value)}>
+              <option value="">— select category —</option>
+              <option value="breakfast">🍳 Breakfast</option>
+              <option value="lunch">🥗 Lunch</option>
+              <option value="dinner">🍲 Dinner</option>
+              <option value="dessert">🍰 Dessert</option>
+            </select>
+          </div>
+        )}
 
         <div className="form-field">
           <label>Description</label>
