@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { api } from '../api';
 import TypeBadge from '../components/TypeBadge';
+import CookMode from '../components/CookMode';
 import './RecipeDetail.css';
 
 export default function RecipeDetail() {
@@ -11,6 +12,7 @@ export default function RecipeDetail() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [deleting, setDeleting] = useState(false);
+  const [cookMode, setCookMode] = useState(false);
 
   async function handleToggleFavorite() {
     const { is_favorite } = await api.toggleFavorite(id);
@@ -107,7 +109,10 @@ export default function RecipeDetail() {
 
         {recipe.instructions && (
           <section className="detail-section">
-            <h2>Instructions</h2>
+            <div className="section-header">
+              <h2>Instructions</h2>
+              <button className="btn-cook" onClick={() => setCookMode(true)}>▶ Cook Mode</button>
+            </div>
             <div className="rich-content" dangerouslySetInnerHTML={{ __html: recipe.instructions }} />
           </section>
         )}
@@ -121,6 +126,13 @@ export default function RecipeDetail() {
 
         <Link to="/" className="back-link">← Back to all recipes</Link>
       </div>
+      {cookMode && (
+        <CookMode
+          instructions={recipe.instructions}
+          title={recipe.title}
+          onClose={() => setCookMode(false)}
+        />
+      )}
     </div>
   );
 }

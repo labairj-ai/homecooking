@@ -1,0 +1,97 @@
+.cook-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+}
+
+.cook-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.cook-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: calc(100% - 48px);
+}
+
+.cook-close {
+  background: none;
+  border: none;
+  font-size: 1.6rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  line-height: 1;
+  padding: 0 0.25rem;
+  flex-shrink: 0;
+}
+.cook-close:hover { color: var(--text); }
+
+.cook-body {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1.5rem;
+  gap: 1rem;
+}
+
+.cook-counter {
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.cook-step {
+  font-size: clamp(1.4rem, 4vw, 2rem);
+  line-height: 1.7;
+  max-width: 600px;
+  text-align: center;
+  color: var(--text);
+}
+
+.cook-step strong { font-weight: 700; }
+.cook-step em { font-style: italic; }
+
+.cook-step--heading {
+  font-size: clamp(1rem, 3vw, 1.4rem);
+  font-style: italic;
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+.cook-nav {
+  display: flex;
+  border-top: 1px solid var(--border);
+  height: 68px;
+  flex-shrink: 0;
+}
+
+.cook-btn {
+  flex: 1;
+  background: none;
+  border: none;
+  font-size: 1.05rem;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--accent);
+  transition: background 0.15s;
+}
+.cook-btn:hover:not(:disabled) { background: var(--accent-light); }
+.cook-btn:disabled { color: var(--border); cursor: default; }
+.cook-btn--prev { border-right: 1px solid var(--border); }
