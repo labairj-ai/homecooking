@@ -69,7 +69,7 @@
 .ingredients-editor { display: flex; flex-direction: column; gap: 0.5rem; }
 .ing-row {
   display: grid;
-  grid-template-columns: 90px 80px 1fr 32px;
+  grid-template-columns: 90px 110px 1fr 32px;
   gap: 0.5rem;
   align-items: center;
 }
@@ -79,7 +79,7 @@
 .add-ing-btn { align-self: flex-start; margin-top: 0.25rem; font-size: 0.85rem; }
 
 @media (max-width: 500px) {
-  .ing-row { grid-template-columns: 70px 60px 1fr 28px; }
+  .ing-row { grid-template-columns: 70px 90px 1fr 28px; }
 }
 
 .tags-input {

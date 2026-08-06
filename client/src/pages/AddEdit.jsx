@@ -5,6 +5,12 @@ import './AddEdit.css';
 
 const EMPTY_ING = () => ({ name: '', amount: '', unit: '' });
 
+const UNITS = [
+  '', 'tsp', 'tbsp', 'cup', 'oz', 'fl oz', 'lb', 'g', 'kg', 'ml', 'L',
+  'pinch', 'dash', 'splash', 'to taste',
+  'whole', 'slice', 'clove', 'can', 'bunch', 'sprig', 'piece',
+];
+
 export default function AddEdit() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -185,12 +191,15 @@ export default function AddEdit() {
                   onChange={(e) => setIng(idx, 'amount', e.target.value)}
                   placeholder="Amount"
                 />
-                <input
+                <select
                   className="ing-input ing-unit"
                   value={ing.unit}
                   onChange={(e) => setIng(idx, 'unit', e.target.value)}
-                  placeholder="Unit"
-                />
+                >
+                  {UNITS.map((u) => (
+                    <option key={u} value={u}>{u || '— unit —'}</option>
+                  ))}
+                </select>
                 <input
                   className="ing-input ing-name"
                   value={ing.name}
