@@ -23,3 +23,22 @@
 }
 
 .nav-logo { font-size: 1.6rem; }
+
+.nav-links {
+  display: flex;
+  gap: 0.25rem;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.nav-link {
+  padding: 0.4rem 1rem;
+  border-radius: 20px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  transition: color 0.15s, background 0.15s;
+}
+.nav-link:hover { color: var(--text); background: var(--surface2); }
+.nav-link.active { color: var(--text); background: var(--surface2); font-weight: 600; }

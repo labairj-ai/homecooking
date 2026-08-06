@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
 import { api } from '../api';
 import RichEditor from '../components/RichEditor';
 import './AddEdit.css';
@@ -15,11 +15,14 @@ const UNITS = [
 export default function AddEdit() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { pathname } = useLocation();
   const isEdit = Boolean(id);
+  const isCellar = pathname.startsWith('/cellar');
+  const defaultType = isCellar ? 'drink' : 'recipe';
 
   const [form, setForm] = useState({
     title: '',
-    type: 'recipe',
+    type: defaultType,
     subcategory: '',
     description: '',
     instructions: '',
@@ -135,8 +138,8 @@ export default function AddEdit() {
   return (
     <div className="addedit">
       <div className="addedit-header">
-        <Link to={isEdit ? `/recipe/${id}` : '/'} className="back-link">← Back</Link>
-        <h1>{isEdit ? 'Edit Recipe' : 'Add New Recipe'}</h1>
+        <Link to={isEdit ? `/recipe/${id}` : (isCellar ? '/cellar' : '/')} className="back-link">← Back</Link>
+        <h1>{isEdit ? 'Edit' : (isCellar ? 'Add to Cellar' : 'Add New Recipe')}</h1>
       </div>
 
       <form onSubmit={handleSubmit} className="addedit-form">
@@ -331,11 +334,11 @@ export default function AddEdit() {
         </div>
 
         <div className="form-actions">
-          <Link to={isEdit ? `/recipe/${id}` : '/'} className="btn-secondary" style={{ padding: '0.6rem 1.4rem', borderRadius: 8, border: '1.5px solid var(--border)', fontSize: '0.9rem', fontWeight: 500 }}>
+          <Link to={isEdit ? `/recipe/${id}` : (isCellar ? '/cellar' : '/')} className="btn-secondary" style={{ padding: '0.6rem 1.4rem', borderRadius: 8, border: '1.5px solid var(--border)', fontSize: '0.9rem', fontWeight: 500 }}>
             Cancel
           </Link>
           <button type="submit" className="btn-primary" style={{ padding: '0.6rem 1.8rem', borderRadius: 8, fontSize: '0.9rem' }} disabled={saving}>
-            {saving ? 'Saving…' : isEdit ? 'Save Changes' : 'Add Recipe'}
+            {saving ? 'Saving…' : isEdit ? 'Save Changes' : (isCellar ? 'Add to Cellar' : 'Add Recipe')}
           </button>
         </div>
       </form>

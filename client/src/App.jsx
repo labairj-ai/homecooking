@@ -1,5 +1,6 @@
 import { Routes, Route } from 'react-router-dom';
 import Home from './pages/Home';
+import Cellar from './pages/Cellar';
 import RecipeDetail from './pages/RecipeDetail';
 import AddEdit from './pages/AddEdit';
 import Nav from './components/Nav';
@@ -12,6 +13,8 @@ export default function App() {
       <main className="main-content">
         <Routes>
           <Route path="/" element={<Home />} />
+          <Route path="/cellar" element={<Cellar />} />
+          <Route path="/cellar/add" element={<AddEdit />} />
           <Route path="/recipe/:id" element={<RecipeDetail />} />
           <Route path="/add" element={<AddEdit />} />
           <Route path="/edit/:id" element={<AddEdit />} />

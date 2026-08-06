@@ -7,7 +7,6 @@ const FILTERS = [
   { label: 'All', value: '' },
   { label: 'Recipes', value: 'recipe' },
   { label: 'Cocktails', value: 'cocktail' },
-  { label: 'Drinks', value: 'drink' },
 ];
 
 const SUBCATEGORIES = [
@@ -18,20 +17,11 @@ const SUBCATEGORIES = [
   { label: '🍰 Dessert', value: 'dessert' },
 ];
 
-const DRINK_SUBCATEGORIES = [
-  { label: 'All', value: '' },
-  { label: '🍷 Wine', value: 'wine' },
-  { label: '🍺 Beer', value: 'beer' },
-  { label: '🥃 Spirits', value: 'spirits' },
-];
-
 export default function Home() {
   const [recipes, setRecipes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('');
   const [subFilter, setSubFilter] = useState('');
-  const [favOnly, setFavOnly] = useState(false);
-  const [searchInput, setSearchInput] = useState('');
   const [searchTerms, setSearchTerms] = useState([]);
   const [termDraft, setTermDraft] = useState('');
   const [error, setError] = useState(null);
@@ -80,12 +70,11 @@ export default function Home() {
   }
 
   const displayed = searchTerms.length > 0
-    ? recipes
+    ? recipes.filter((r) => r.type !== 'drink')
     : recipes.filter((r) => {
+        if (r.type === 'drink') return false;
         if (filter && r.type !== filter) return false;
         if (filter === 'recipe' && subFilter && r.subcategory !== subFilter) return false;
-        if (filter === 'drink' && subFilter && r.subcategory !== subFilter) return false;
-        if (filter === 'drink' && favOnly && !r.is_favorite) return false;
         return true;
       });
 
@@ -93,7 +82,7 @@ export default function Home() {
     <div className="home">
       <div className="home-header">
         <h1>My Kitchen</h1>
-        <p className="home-subtitle">Recipes &amp; cocktails, all in one place</p>
+        <p className="home-subtitle">Recipes &amp; cocktails</p>
       </div>
 
       <div className="search-bar">
@@ -126,7 +115,7 @@ export default function Home() {
               <button
                 key={f.value}
                 className={`filter-tab ${filter === f.value ? 'active' : ''}`}
-                onClick={() => { setFilter(f.value); setSubFilter(''); setFavOnly(false); }}
+                onClick={() => { setFilter(f.value); setSubFilter(''); }}
               >
                 {f.label}
               </button>
@@ -143,25 +132,6 @@ export default function Home() {
                   {s.label}
                 </button>
               ))}
-            </div>
-          )}
-          {filter === 'drink' && (
-            <div className="filter-tabs subfilter-tabs">
-              {DRINK_SUBCATEGORIES.map((s) => (
-                <button
-                  key={s.value}
-                  className={`filter-tab ${subFilter === s.value ? 'active' : ''}`}
-                  onClick={() => setSubFilter(s.value)}
-                >
-                  {s.label}
-                </button>
-              ))}
-              <button
-                className={`filter-tab fav-filter-tab ${favOnly ? 'active' : ''}`}
-                onClick={() => setFavOnly((v) => !v)}
-              >
-                ★ Favorites
-              </button>
             </div>
           )}
         </>

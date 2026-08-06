@@ -1,15 +1,26 @@
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import './Nav.css';
 
 export default function Nav() {
+  const { pathname } = useLocation();
+  const inCellar = pathname.startsWith('/cellar');
+
   return (
     <nav className="nav">
       <Link to="/" className="nav-brand">
         <span className="nav-logo">🍳</span>
         <span>Home Cooking</span>
       </Link>
-      <Link to="/add" className="btn-primary" style={{ padding: '0.5rem 1.1rem', borderRadius: 8 }}>
-        + Add Recipe
+      <div className="nav-links">
+        <Link to="/" className={`nav-link ${!inCellar ? 'active' : ''}`}>My Kitchen</Link>
+        <Link to="/cellar" className={`nav-link ${inCellar ? 'active' : ''}`}>My Cellar</Link>
+      </div>
+      <Link
+        to={inCellar ? '/cellar/add' : '/add'}
+        className="btn-primary"
+        style={{ padding: '0.5rem 1.1rem', borderRadius: 8 }}
+      >
+        {inCellar ? '+ Add to Cellar' : '+ Add Recipe'}
       </Link>
     </nav>
   );
