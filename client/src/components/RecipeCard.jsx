@@ -19,7 +19,11 @@ export default function RecipeCard({ recipe, onToggleFavorite }) {
     <Link to={`/recipe/${recipe.id}`} className="recipe-card">
       <div className="card-image">
         {recipe.image_path ? (
-          <img src={`/uploads/${recipe.image_path}`} alt={recipe.title} />
+          <img
+            src={`/uploads/${recipe.image_path}`}
+            alt={recipe.title}
+            style={{ objectPosition: `${recipe.focal_x ?? 50}% ${recipe.focal_y ?? 50}%` }}
+          />
         ) : (
           <div className="card-image-placeholder">
             {PLACEHOLDERS[recipe.type] ?? '🍽️'}

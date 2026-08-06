@@ -73,4 +73,10 @@ if (userVersion < 1) {
   db.pragma('user_version = 1');
 }
 
+if (userVersion < 2) {
+  db.exec(`ALTER TABLE recipes ADD COLUMN focal_x INTEGER NOT NULL DEFAULT 50`);
+  db.exec(`ALTER TABLE recipes ADD COLUMN focal_y INTEGER NOT NULL DEFAULT 50`);
+  db.pragma('user_version = 2');
+}
+
 module.exports = db;

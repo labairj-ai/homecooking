@@ -44,7 +44,11 @@ export default function RecipeDetail() {
     <div className="detail">
       {recipe.image_path && (
         <div className="detail-hero">
-          <img src={`/uploads/${recipe.image_path}`} alt={recipe.title} />
+          <img
+            src={`/uploads/${recipe.image_path}`}
+            alt={recipe.title}
+            style={{ objectPosition: `${recipe.focal_x ?? 50}% ${recipe.focal_y ?? 50}%` }}
+          />
         </div>
       )}
 

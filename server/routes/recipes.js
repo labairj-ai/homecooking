@@ -68,19 +68,23 @@ router.patch('/:id/favorite', (req, res) => {
   res.json({ id: recipe.id, is_favorite: newVal });
 });
 
+function clampFocal(val, fallback = 50) {
+  return Math.min(100, Math.max(0, Math.round(Number(val) || fallback)));
+}
+
 // POST /api/recipes
 router.post('/', (req, res) => {
-  const { title, type, subcategory, description, instructions, notes, image_path, is_favorite = 0, ingredients = [], tags = [] } = req.body;
+  const { title, type, subcategory, description, instructions, notes, image_path, is_favorite = 0, focal_x = 50, focal_y = 50, ingredients = [], tags = [] } = req.body;
 
   if (!title || !type) return res.status(400).json({ error: 'title and type are required' });
 
   const insert = db.transaction(() => {
     const { lastInsertRowid } = db
       .prepare(
-        `INSERT INTO recipes (title, type, subcategory, description, instructions, notes, image_path, is_favorite)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+        `INSERT INTO recipes (title, type, subcategory, description, instructions, notes, image_path, is_favorite, focal_x, focal_y)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
       )
-      .run(title, type, subcategory || null, description || null, instructions || null, notes || null, image_path || null, is_favorite ? 1 : 0);
+      .run(title, type, subcategory || null, description || null, instructions || null, notes || null, image_path || null, is_favorite ? 1 : 0, clampFocal(focal_x), clampFocal(focal_y));
 
     const id = lastInsertRowid;
 
@@ -103,7 +107,7 @@ router.post('/', (req, res) => {
 
 // PUT /api/recipes/:id
 router.put('/:id', (req, res) => {
-  const { title, type, subcategory, description, instructions, notes, image_path, is_favorite, ingredients = [], tags = [] } = req.body;
+  const { title, type, subcategory, description, instructions, notes, image_path, is_favorite, focal_x, focal_y, ingredients = [], tags = [] } = req.body;
   const { id } = req.params;
 
   const existing = db.prepare('SELECT * FROM recipes WHERE id = ?').get(id);
@@ -118,7 +122,7 @@ router.put('/:id', (req, res) => {
 
     db.prepare(
       `UPDATE recipes SET title=?, type=?, subcategory=?, description=?, instructions=?, notes=?, image_path=?,
-       is_favorite=?, updated_at=datetime('now') WHERE id=?`
+       is_favorite=?, focal_x=?, focal_y=?, updated_at=datetime('now') WHERE id=?`
     ).run(
       title ?? existing.title,
       type ?? existing.type,
@@ -128,6 +132,8 @@ router.put('/:id', (req, res) => {
       notes !== undefined ? notes : existing.notes,
       image_path !== undefined ? image_path : existing.image_path,
       is_favorite !== undefined ? (is_favorite ? 1 : 0) : existing.is_favorite,
+      focal_x !== undefined ? clampFocal(focal_x) : (existing.focal_x ?? 50),
+      focal_y !== undefined ? clampFocal(focal_y) : (existing.focal_y ?? 50),
       id
     );
 

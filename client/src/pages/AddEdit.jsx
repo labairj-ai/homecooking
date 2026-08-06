@@ -26,6 +26,8 @@ export default function AddEdit() {
     notes: '',
     image_path: null,
     is_favorite: false,
+    focal_x: 50,
+    focal_y: 50,
   });
   const [ingredients, setIngredients] = useState([EMPTY_ING()]);
   const [tags, setTags] = useState([]);
@@ -48,6 +50,8 @@ export default function AddEdit() {
         notes: recipe.notes || '',
         image_path: recipe.image_path || null,
         is_favorite: Boolean(recipe.is_favorite),
+        focal_x: recipe.focal_x ?? 50,
+        focal_y: recipe.focal_y ?? 50,
       });
       setIngredients(recipe.ingredients.length ? recipe.ingredients : [EMPTY_ING()]);
       setTags(recipe.tags || []);
@@ -102,6 +106,12 @@ export default function AddEdit() {
     setField('image_path', null);
     setImagePreview(null);
     if (fileRef.current) fileRef.current.value = '';
+  }
+
+  function handleFocalClick(e) {
+    const rect = e.currentTarget.getBoundingClientRect();
+    setField('focal_x', Math.min(100, Math.max(0, Math.round(((e.clientX - rect.left) / rect.width) * 100))));
+    setField('focal_y', Math.min(100, Math.max(0, Math.round(((e.clientY - rect.top) / rect.height) * 100))));
   }
 
   async function handleSubmit(e) {
@@ -190,9 +200,17 @@ export default function AddEdit() {
           <label>Photo</label>
           <div className="image-upload-area">
             {imagePreview ? (
-              <div className="image-preview">
-                <img src={imagePreview} alt="Preview" />
-                <button type="button" className="remove-image" onClick={removeImage}>×</button>
+              <div className="image-preview-wrap">
+                <div className="image-preview" onClick={handleFocalClick}>
+                  <img
+                    src={imagePreview}
+                    alt="Preview"
+                    style={{ objectPosition: `${form.focal_x}% ${form.focal_y}%` }}
+                  />
+                  <div className="focal-dot" style={{ left: `${form.focal_x}%`, top: `${form.focal_y}%` }} />
+                  <button type="button" className="remove-image" onClick={(e) => { e.stopPropagation(); removeImage(); }}>×</button>
+                </div>
+                <p className="focal-hint">Click image to set focal point</p>
               </div>
             ) : (
               <label className="image-upload-btn" htmlFor="image-file">
