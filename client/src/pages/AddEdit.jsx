@@ -210,7 +210,12 @@ export default function AddEdit() {
                   <div className="focal-dot" style={{ left: `${form.focal_x}%`, top: `${form.focal_y}%` }} />
                   <button type="button" className="remove-image" onClick={(e) => { e.stopPropagation(); removeImage(); }}>×</button>
                 </div>
-                <p className="focal-hint">Click image to set focal point</p>
+                <div className="image-preview-actions">
+                  <label htmlFor="image-file" className="change-photo-btn">
+                    {uploading ? 'Uploading…' : 'Change photo'}
+                  </label>
+                  <p className="focal-hint">Click image to set focal point</p>
+                </div>
               </div>
             ) : (
               <label className="image-upload-btn" htmlFor="image-file">
