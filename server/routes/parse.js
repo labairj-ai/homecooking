@@ -1,8 +1,8 @@
 const express = require('express');
 const multer = require('multer');
 const path = require('path');
-const fs = require('fs');
 const crypto = require('crypto');
+const { createWorker } = require('tesseract.js');
 
 const router = express.Router();
 
@@ -22,77 +22,92 @@ const upload = multer({
   fileFilter: (_req, file, cb) => cb(null, /jpeg|jpg|png|gif|webp|avif/.test(file.mimetype)),
 });
 
-const PROMPT = `You are a recipe parser. Look at this image and extract the recipe.
+// Section header patterns
+const SECTION_RE = {
+  ingredients:  /^(ingredients?|what you.{0,5}ll need|you.{0,5}ll need)\s*:?\s*$/i,
+  instructions: /^(instructions?|directions?|method|steps?|how to( make)?|preparation|prep)\s*:?\s*$/i,
+  notes:        /^(notes?|tips?|serving suggestions?|variations?)\s*:?\s*$/i,
+};
 
-Return ONLY a JSON object — no markdown, no explanation, no code fences:
-{
-  "title": "Recipe name",
-  "type": "recipe",
-  "description": "One sentence description",
-  "ingredients": [{"name": "flour", "amount": "2", "unit": "cups"}],
-  "instructions": ["Step 1 text", "Step 2 text"],
-  "notes": "Tips or variations"
+// Amount + optional unit + ingredient name
+const ING_RE = /^([\d¼½¾⅓⅔⅛\s\/.-]+)?\s*(tsp|tbsp|teaspoons?|tablespoons?|cups?|oz|ounces?|lbs?|pounds?|g|grams?|kg|ml|liters?|litres?|pinch|dash|splash|to taste)\.?\s+(.+)$/i;
+
+function parseText(raw) {
+  const lines = raw.split('\n').map((l) => l.trim()).filter(Boolean);
+
+  let currentSection = 'header';
+  const headerLines = [];
+  const ingredients = [];
+  const instructions = [];
+  let notes = '';
+
+  for (const line of lines) {
+    const secMatch = Object.entries(SECTION_RE).find(([, re]) => re.test(line) && line.length < 50);
+    if (secMatch) { currentSection = secMatch[0]; continue; }
+
+    if (currentSection === 'header') {
+      headerLines.push(line);
+      continue;
+    }
+
+    if (currentSection === 'ingredients') {
+      const m = line.match(ING_RE);
+      if (m) {
+        ingredients.push({ amount: (m[1] || '').trim(), unit: (m[2] || '').trim(), name: m[3].trim() });
+      } else if (line.length > 2 && !/^(serves|yield|prep|cook|total|time)/i.test(line)) {
+        ingredients.push({ amount: '', unit: '', name: line });
+      }
+      continue;
+    }
+
+    if (currentSection === 'instructions') {
+      const clean = line.replace(/^\d+[.)]\s*/, '').replace(/^[•·\-*]\s*/, '').trim();
+      if (clean) instructions.push(clean);
+      continue;
+    }
+
+    if (currentSection === 'notes') {
+      notes = notes ? `${notes} ${line}` : line;
+    }
+  }
+
+  // Fallback: if no sections found, detect ingredients heuristically
+  if (!ingredients.length && !instructions.length) {
+    for (const line of lines.slice(1)) {
+      const m = line.match(ING_RE);
+      if (m) ingredients.push({ amount: (m[1] || '').trim(), unit: (m[2] || '').trim(), name: m[3].trim() });
+    }
+  }
+
+  return {
+    title: headerLines[0] || '',
+    type: 'recipe',
+    description: headerLines.slice(1, 3).join(' '),
+    ingredients,
+    instructions,
+    notes,
+  };
 }
-
-Rules:
-- type must be "recipe" or "cocktail"
-- For ingredients missing amounts, use "" for amount and unit
-- instructions is an array of plain-text step strings
-- Use "" for any field you cannot determine from the image`;
 
 // POST /api/parse-recipe  (multipart/form-data, field: image)
 router.post('/', upload.single('image'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No image uploaded' });
 
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) {
-    return res.status(503).json({ error: 'ANTHROPIC_API_KEY not configured on server' });
-  }
+  const filePath = path.join(UPLOADS_DIR, req.file.filename);
 
+  let worker;
   try {
-    const imageData = fs.readFileSync(path.join(UPLOADS_DIR, req.file.filename)).toString('base64');
-    const mimeType = req.file.mimetype || 'image/jpeg';
-
-    const aiRes = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 2048,
-        messages: [{
-          role: 'user',
-          content: [
-            { type: 'image', source: { type: 'base64', media_type: mimeType, data: imageData } },
-            { type: 'text', text: PROMPT },
-          ],
-        }],
-      }),
+    worker = await createWorker('eng', 1, {
+      cachePath: path.join(__dirname, '..', '..', '.tesseract-cache'),
+      logger: () => {},
     });
-
-    if (!aiRes.ok) {
-      const err = await aiRes.json().catch(() => ({}));
-      throw new Error(err.error?.message || `Claude API ${aiRes.status}`);
-    }
-
-    const aiJson = await aiRes.json();
-    const text = aiJson.content[0].text.trim();
-
-    let recipe;
-    try {
-      recipe = JSON.parse(text);
-    } catch {
-      const match = text.match(/\{[\s\S]*\}/);
-      if (match) recipe = JSON.parse(match[0]);
-      else throw new Error('Could not parse response as JSON');
-    }
-
+    const { data: { text } } = await worker.recognize(filePath);
+    const recipe = parseText(text);
     res.json({ filename: req.file.filename, recipe });
   } catch (err) {
     res.status(500).json({ error: err.message });
+  } finally {
+    if (worker) await worker.terminate();
   }
 });
 
