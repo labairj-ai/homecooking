@@ -75,29 +75,44 @@ function extractHtmlScrape(html) {
     return result;
   }
 
+  // Find a list (ul/ol) near a heading — tries multiple traversal paths
+  function findListNear(heading) {
+    let el = heading.next('ul, ol');
+    if (el.length) return el;
+    el = heading.parent().next('ul, ol');
+    if (el.length) return el;
+    el = heading.parent().next().find('ul, ol').first();
+    if (el.length) return el;
+    el = heading.nextAll('ul, ol').first();
+    if (el.length) return el;
+    // Walk up two levels and try next sibling
+    let parent = heading.parent().parent();
+    for (let i = 0; i < 2; i++) {
+      const ns = parent.next();
+      if (ns.is('ul, ol')) return ns;
+      const found = ns.find('ul, ol').first();
+      if (found.length) return found;
+      parent = parent.parent();
+    }
+    return $();
+  }
+
   // Ingredients
   const ingredients = [];
   const ingHeading = sectionAfterHeading(['ingredients', 'ingredient list']);
   if (ingHeading) {
-    // Look for ul after heading (within next ~3 siblings or parent's next sibling)
-    let ul = ingHeading.next('ul');
-    if (!ul.length) ul = ingHeading.parent().next().find('ul').first();
-    if (!ul.length) ul = ingHeading.nextAll('ul').first();
-
+    const ul = findListNear(ingHeading);
     ul.find('li').each((_, li) => {
       const text = cleanText($(li).text());
       if (text) ingredients.push(parseIngredient(text));
     });
   }
 
-  // Instructions — try list items first, then step headings
+  // Instructions — try list first, then numbered step headings
   const instructions = [];
   const instHeading = sectionAfterHeading(['instructions', 'directions', 'method', 'steps', 'preparation']);
   if (instHeading) {
-    let ol = instHeading.next('ol, ul');
-    if (!ol.length) ol = instHeading.parent().next().find('ol, ul').first();
-    if (!ol.length) ol = instHeading.nextAll('ol, ul').first();
-
+    const ol = findListNear(instHeading);
     if (ol.length) {
       ol.find('li').each((_, li) => {
         const text = cleanText($(li).text());
@@ -106,21 +121,14 @@ function extractHtmlScrape(html) {
     }
   }
 
-  // Fallback: collect step headings (Step 1, Step 2...) and their following text
+  // Fallback: "Step N" headings whose following p/div contains the step text
   if (!instructions.length) {
     $('h2, h3, h4').each((_, el) => {
-      const text = $(el).text().trim();
-      if (/^step\s*\d+/i.test(text)) {
-        // Get the next sibling paragraph(s) text
-        let content = '';
-        let next = $(el).next();
-        while (next.length && !next.is('h1,h2,h3,h4')) {
-          const t = cleanText(next.text());
-          if (t) content += (content ? ' ' : '') + t;
-          next = next.next();
-        }
-        if (content) instructions.push(content);
-      }
+      if (!/^step\s*\d+/i.test($(el).text().trim())) return;
+      // content may be in next sibling or parent's next sibling
+      let content = cleanText($(el).next('p, div').text());
+      if (!content) content = cleanText($(el).parent().next('p, div').text());
+      if (content) instructions.push(content);
     });
   }
 
