@@ -42,4 +42,28 @@ export const api = {
     form.append('image', file);
     return fetch(`${BASE}/upload`, { method: 'POST', body: form }).then(json);
   },
+
+  parseRecipe: (file) => {
+    const form = new FormData();
+    form.append('image', file);
+    return fetch(`${BASE}/parse-recipe`, { method: 'POST', body: form }).then(json);
+  },
+
+  listGrocery: () => fetch(`${BASE}/grocery`).then(json),
+
+  addGroceryItems: (items) =>
+    fetch(`${BASE}/grocery`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ items }),
+    }).then(json),
+
+  toggleGroceryItem: (id) =>
+    fetch(`${BASE}/grocery/${id}/check`, { method: 'PATCH' }).then(json),
+
+  deleteGroceryItem: (id) =>
+    fetch(`${BASE}/grocery/${id}`, { method: 'DELETE' }).then(json),
+
+  clearGrocery: (all = false) =>
+    fetch(`${BASE}/grocery${all ? '?all=true' : ''}`, { method: 'DELETE' }).then(json),
 };

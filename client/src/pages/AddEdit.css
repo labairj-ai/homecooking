@@ -171,6 +171,49 @@
   accent-color: var(--drink);
 }
 
+.parse-banner {
+  background: var(--surface2);
+  border: 1.5px dashed var(--border);
+  border-radius: var(--radius);
+  padding: 1rem 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.btn-parse {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.875rem;
+  font-weight: 600;
+  padding: 0.5rem 1.1rem;
+  border-radius: 20px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s;
+  flex-shrink: 0;
+}
+.btn-parse:hover { background: var(--accent-hover); }
+.btn-parse--loading { opacity: 0.7; cursor: wait; }
+
+.parse-hint {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  flex: 1;
+  margin: 0;
+}
+
+.parse-error {
+  width: 100%;
+  font-size: 0.82rem;
+  color: var(--accent);
+  margin: 0;
+}
+
 .form-actions {
   display: flex;
   justify-content: flex-end;

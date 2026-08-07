@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { api } from '../api';
 import TypeBadge from '../components/TypeBadge';
@@ -13,6 +13,7 @@ export default function RecipeDetail() {
   const [error, setError] = useState(null);
   const [deleting, setDeleting] = useState(false);
   const [cookMode, setCookMode] = useState(false);
+  const [addedToList, setAddedToList] = useState(false);
 
   async function handleToggleFavorite() {
     const { is_favorite } = await api.toggleFavorite(id);
@@ -25,6 +26,16 @@ export default function RecipeDetail() {
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
   }, [id]);
+
+  const handleAddToList = useCallback(async () => {
+    const items = (recipe?.ingredients || [])
+      .filter((i) => i.name)
+      .map((i) => ({ name: i.name, amount: i.amount || null, unit: i.unit || null, recipe_id: recipe.id, recipe_title: recipe.title }));
+    if (!items.length) return;
+    await api.addGroceryItems(items);
+    setAddedToList(true);
+    setTimeout(() => setAddedToList(false), 3000);
+  }, [recipe]);
 
   async function handleDelete() {
     if (!confirm('Delete this recipe? This cannot be undone.')) return;
@@ -93,7 +104,15 @@ export default function RecipeDetail() {
 
         {recipe.ingredients?.length > 0 && (
           <section className="detail-section">
-            <h2>Ingredients</h2>
+            <div className="section-header">
+              <h2>Ingredients</h2>
+              <button
+                className={`btn-add-list${addedToList ? ' btn-add-list--done' : ''}`}
+                onClick={handleAddToList}
+              >
+                {addedToList ? '✓ Added to list' : '+ Grocery list'}
+              </button>
+            </div>
             <ul className="ingredients-list">
               {recipe.ingredients.map((ing, i) => (
                 <li key={i} className="ingredient-row">

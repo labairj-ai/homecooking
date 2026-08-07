@@ -39,7 +39,10 @@ export default function AddEdit() {
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
+  const [parsing, setParsing] = useState(false);
+  const [parseError, setParseError] = useState(null);
   const fileRef = useRef();
+  const parseFileRef = useRef();
 
   useEffect(() => {
     if (!isEdit) return;
@@ -117,6 +120,37 @@ export default function AddEdit() {
     setField('focal_y', Math.min(100, Math.max(0, Math.round(((e.clientY - rect.top) / rect.height) * 100))));
   }
 
+  async function handleParseImage(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    setParsing(true);
+    setParseError(null);
+    try {
+      const { filename, recipe } = await api.parseRecipe(file);
+      setForm((f) => ({
+        ...f,
+        title: recipe.title || f.title,
+        type: ['recipe', 'cocktail', 'drink'].includes(recipe.type) ? recipe.type : f.type,
+        description: recipe.description || f.description,
+        instructions: recipe.instructions?.length
+          ? `<ol>${recipe.instructions.map((s) => `<li>${s}</li>`).join('')}</ol>`
+          : f.instructions,
+        notes: recipe.notes || f.notes,
+        image_path: filename,
+      }));
+      if (recipe.ingredients?.length) {
+        const valid = recipe.ingredients.filter((i) => i.name?.trim());
+        if (valid.length) setIngredients(valid.map((i) => ({ name: i.name, amount: i.amount || '', unit: i.unit || '' })));
+      }
+      setImagePreview(`/uploads/${filename}`);
+    } catch (err) {
+      setParseError(err.message);
+    } finally {
+      setParsing(false);
+      if (parseFileRef.current) parseFileRef.current.value = '';
+    }
+  }
+
   async function handleSubmit(e) {
     e.preventDefault();
     if (!form.title.trim()) return setError('Title is required.');
@@ -143,6 +177,24 @@ export default function AddEdit() {
       </div>
 
       <form onSubmit={handleSubmit} className="addedit-form">
+        {!isEdit && (
+          <div className="parse-banner">
+            <label htmlFor="parse-file" className={`btn-parse${parsing ? ' btn-parse--loading' : ''}`}>
+              {parsing ? '⏳ Parsing…' : '📷 Parse from photo'}
+            </label>
+            <p className="parse-hint">Take or upload a photo of a recipe to auto-fill the form</p>
+            <input
+              id="parse-file"
+              type="file"
+              accept="image/*"
+              ref={parseFileRef}
+              onChange={handleParseImage}
+              style={{ display: 'none' }}
+              disabled={parsing}
+            />
+            {parseError && <p className="parse-error">Error: {parseError}</p>}
+          </div>
+        )}
         {error && <div className="form-error">{error}</div>}
 
         <div className="form-row form-row--2">

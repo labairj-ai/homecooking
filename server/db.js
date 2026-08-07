@@ -79,4 +79,20 @@ if (userVersion < 2) {
   db.pragma('user_version = 2');
 }
 
+if (userVersion < 3) {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS grocery_items (
+      id            INTEGER PRIMARY KEY AUTOINCREMENT,
+      name          TEXT NOT NULL,
+      amount        TEXT,
+      unit          TEXT,
+      recipe_id     INTEGER REFERENCES recipes(id) ON DELETE SET NULL,
+      recipe_title  TEXT,
+      checked       INTEGER NOT NULL DEFAULT 0,
+      created_at    TEXT NOT NULL DEFAULT (datetime('now'))
+    )
+  `);
+  db.pragma('user_version = 3');
+}
+
 module.exports = db;

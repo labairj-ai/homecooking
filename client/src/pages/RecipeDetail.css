@@ -71,6 +71,20 @@
 }
 .btn-cook:hover { background: var(--accent-hover); }
 
+.btn-add-list {
+  background: none;
+  border: 1.5px solid var(--border);
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.3rem 0.85rem;
+  border-radius: 20px;
+  flex-shrink: 0;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+.btn-add-list:hover { border-color: var(--recipe); color: var(--recipe); background: var(--recipe-light); }
+.btn-add-list--done { border-color: var(--recipe); color: var(--recipe); background: var(--recipe-light); }
+
 .ingredients-list {
   list-style: none;
   display: flex;
