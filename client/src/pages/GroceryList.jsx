@@ -108,6 +108,11 @@ export default function GroceryList() {
         <button className="btn-from-recipe" onClick={() => setPickerOpen(true)}>
           + From recipe
         </button>
+        {items.length > 0 && (
+          <button className="btn-clear-list" onClick={handleClearAll}>
+            Clear
+          </button>
+        )}
       </div>
 
       {items.length === 0 && (

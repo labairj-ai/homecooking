@@ -48,6 +48,19 @@
 }
 .btn-from-recipe:hover { border-color: var(--accent); color: var(--accent); }
 
+.btn-clear-list {
+  flex-shrink: 0;
+  background: none;
+  border: 1.5px solid var(--border);
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  font-weight: 600;
+  padding: 0.6rem 0.9rem;
+  border-radius: 8px;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+.btn-clear-list:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+
 @media (max-width: 500px) {
   .grocery-toolbar { flex-direction: column; }
   .btn-from-recipe { width: 100%; }
