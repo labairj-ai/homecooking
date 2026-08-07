@@ -84,11 +84,6 @@ export default function GroceryList() {
               Clear checked
             </button>
           )}
-          {items.length > 0 && (
-            <button className="btn-secondary grocery-clear-btn" onClick={handleClearAll}>
-              Clear all
-            </button>
-          )}
         </div>
       </div>
 
