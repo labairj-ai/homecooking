@@ -5,6 +5,7 @@ const recipesRouter = require('./routes/recipes');
 const uploadRouter = require('./routes/upload');
 const groceryRouter = require('./routes/grocery');
 const parseRouter = require('./routes/parse');
+const fetchRecipeRouter = require('./routes/fetch-recipe');
 
 const app = express();
 const PORT = process.env.PORT || 4100;
@@ -19,6 +20,7 @@ app.use('/api/recipes', recipesRouter);
 app.use('/api/upload', uploadRouter);
 app.use('/api/grocery', groceryRouter);
 app.use('/api/parse-recipe', parseRouter);
+app.use('/api/fetch-recipe', fetchRecipeRouter);
 
 // Serve built React app in production
 const distPath = path.join(__dirname, '..', 'client', 'dist');

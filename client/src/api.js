@@ -49,6 +49,13 @@ export const api = {
     return fetch(`${BASE}/parse-recipe`, { method: 'POST', body: form }).then(json);
   },
 
+  fetchRecipeFromUrl: (url) =>
+    fetch(`${BASE}/fetch-recipe`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url }),
+    }).then(json),
+
   listGrocery: () => fetch(`${BASE}/grocery`).then(json),
 
   addGroceryItems: (items) =>

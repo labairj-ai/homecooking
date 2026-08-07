@@ -40,7 +40,9 @@ export default function AddEdit() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [parsing, setParsing] = useState(false);
+  const [fetching, setFetching] = useState(false);
   const [parseError, setParseError] = useState(null);
+  const [urlDraft, setUrlDraft] = useState('');
   const fileRef = useRef();
   const parseFileRef = useRef();
 
@@ -120,29 +122,49 @@ export default function AddEdit() {
     setField('focal_y', Math.min(100, Math.max(0, Math.round(((e.clientY - rect.top) / rect.height) * 100))));
   }
 
+  function applyParsedRecipe({ filename, recipe }) {
+    setForm((f) => ({
+      ...f,
+      title: recipe.title || f.title,
+      type: ['recipe', 'cocktail', 'drink'].includes(recipe.type) ? recipe.type : f.type,
+      description: recipe.description || f.description,
+      instructions: recipe.instructions?.length
+        ? `<ol>${recipe.instructions.map((s) => `<li>${s}</li>`).join('')}</ol>`
+        : f.instructions,
+      notes: recipe.notes || f.notes,
+      image_path: filename || f.image_path,
+    }));
+    if (recipe.ingredients?.length) {
+      const valid = recipe.ingredients.filter((i) => i.name?.trim());
+      if (valid.length) setIngredients(valid.map((i) => ({ name: i.name, amount: i.amount || '', unit: i.unit || '' })));
+    }
+    if (filename) setImagePreview(`/uploads/${filename}`);
+  }
+
+  async function handleFetchUrl() {
+    const url = urlDraft.trim();
+    if (!url) return;
+    setFetching(true);
+    setParseError(null);
+    try {
+      const result = await api.fetchRecipeFromUrl(url);
+      applyParsedRecipe(result);
+      setUrlDraft('');
+    } catch (err) {
+      setParseError(err.message);
+    } finally {
+      setFetching(false);
+    }
+  }
+
   async function handleParseImage(e) {
     const file = e.target.files[0];
     if (!file) return;
     setParsing(true);
     setParseError(null);
     try {
-      const { filename, recipe } = await api.parseRecipe(file);
-      setForm((f) => ({
-        ...f,
-        title: recipe.title || f.title,
-        type: ['recipe', 'cocktail', 'drink'].includes(recipe.type) ? recipe.type : f.type,
-        description: recipe.description || f.description,
-        instructions: recipe.instructions?.length
-          ? `<ol>${recipe.instructions.map((s) => `<li>${s}</li>`).join('')}</ol>`
-          : f.instructions,
-        notes: recipe.notes || f.notes,
-        image_path: filename || f.image_path,
-      }));
-      if (recipe.ingredients?.length) {
-        const valid = recipe.ingredients.filter((i) => i.name?.trim());
-        if (valid.length) setIngredients(valid.map((i) => ({ name: i.name, amount: i.amount || '', unit: i.unit || '' })));
-      }
-      if (filename) setImagePreview(`/uploads/${filename}`);
+      const result = await api.parseRecipe(file);
+      applyParsedRecipe(result);
     } catch (err) {
       setParseError(err.message);
     } finally {
@@ -179,10 +201,30 @@ export default function AddEdit() {
       <form onSubmit={handleSubmit} className="addedit-form">
         {!isEdit && (
           <div className="parse-banner">
-            <label htmlFor="parse-file" className={`btn-parse${parsing ? ' btn-parse--loading' : ''}`}>
-              {parsing ? '⏳ Parsing…' : '📷 Parse from photo'}
-            </label>
-            <p className="parse-hint">Upload a photo or PDF of a recipe to auto-fill the form</p>
+            <div className="parse-url-row">
+              <input
+                className="parse-url-input"
+                placeholder="Paste a recipe URL to import…"
+                value={urlDraft}
+                onChange={(e) => setUrlDraft(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleFetchUrl(); } }}
+                disabled={fetching || parsing}
+              />
+              <button
+                type="button"
+                className={`btn-parse${fetching ? ' btn-parse--loading' : ''}`}
+                onClick={handleFetchUrl}
+                disabled={fetching || parsing || !urlDraft.trim()}
+              >
+                {fetching ? '⏳' : 'Import'}
+              </button>
+            </div>
+            <div className="parse-or">
+              <label htmlFor="parse-file" className={`btn-parse-secondary${parsing ? ' btn-parse--loading' : ''}`}>
+                {parsing ? '⏳ Parsing…' : '📷 Photo / PDF'}
+              </label>
+              <span className="parse-hint">Upload a photo or PDF to extract via OCR</span>
+            </div>
             <input
               id="parse-file"
               type="file"
@@ -190,7 +232,7 @@ export default function AddEdit() {
               ref={parseFileRef}
               onChange={handleParseImage}
               style={{ display: 'none' }}
-              disabled={parsing}
+              disabled={parsing || fetching}
             />
             {parseError && <p className="parse-error">Error: {parseError}</p>}
           </div>

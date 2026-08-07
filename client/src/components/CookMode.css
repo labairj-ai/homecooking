@@ -11,6 +11,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 0.75rem;
   padding: 1rem 1.25rem;
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
@@ -95,3 +96,58 @@
 .cook-btn:hover:not(:disabled) { background: var(--accent-light); }
 .cook-btn:disabled { color: var(--border); cursor: default; }
 .cook-btn--prev { border-right: 1px solid var(--border); }
+
+/* Timer badge in top bar */
+.cook-timer-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: var(--surface2);
+  border: 1.5px solid var(--border);
+  border-radius: 20px;
+  padding: 0.25rem 0.6rem;
+  flex-shrink: 0;
+  margin-right: auto;
+}
+.cook-timer-badge--done {
+  background: var(--recipe-light);
+  border-color: var(--recipe);
+  color: var(--recipe);
+}
+
+.cook-timer-time {
+  font-size: 0.9rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+  min-width: 3.5ch;
+}
+.cook-timer-badge--done .cook-timer-time { color: var(--recipe); }
+
+.cook-timer-toggle,
+.cook-timer-reset {
+  background: none;
+  border: none;
+  font-size: 0.9rem;
+  line-height: 1;
+  padding: 0;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.cook-timer-toggle:hover,
+.cook-timer-reset:hover { color: var(--accent); }
+
+/* Timer start button inside step body */
+.cook-timer-start {
+  margin-top: 1.5rem;
+  background: var(--surface2);
+  border: 1.5px solid var(--border);
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  font-weight: 600;
+  padding: 0.5rem 1.25rem;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+.cook-timer-start:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
