@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { api } from '../api';
 import './GroceryList.css';
 
@@ -7,6 +7,7 @@ export default function GroceryList() {
   const [loading, setLoading] = useState(true);
   const [draft, setDraft] = useState('');
   const [adding, setAdding] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   const load = useCallback(() =>
     api.listGrocery().then(setItems).finally(() => setLoading(false)), []);
@@ -47,10 +48,17 @@ export default function GroceryList() {
     setItems([]);
   }
 
+  async function handleAddFromRecipe(recipe) {
+    const newItems = await api.addGroceryItems(
+      recipe.ingredients
+        .filter((i) => i.name)
+        .map((i) => ({ name: i.name, amount: i.amount || null, unit: i.unit || null, recipe_id: recipe.id, recipe_title: recipe.title }))
+    );
+    setItems((prev) => [...prev, ...newItems]);
+  }
+
   const unchecked = items.filter((i) => !i.checked);
   const checked = items.filter((i) => i.checked);
-
-  // Group unchecked by recipe (null recipe_title = manual)
   const manual = unchecked.filter((i) => !i.recipe_title);
   const byRecipe = {};
   unchecked.filter((i) => i.recipe_title).forEach((i) => {
@@ -84,23 +92,28 @@ export default function GroceryList() {
         </div>
       </div>
 
-      <form className="grocery-add-form" onSubmit={handleAdd}>
-        <input
-          className="grocery-add-input"
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          placeholder="Add item…"
-          disabled={adding}
-        />
-        <button type="submit" className="btn-primary" disabled={adding || !draft.trim()}>
-          Add
+      <div className="grocery-toolbar">
+        <form className="grocery-add-form" onSubmit={handleAdd}>
+          <input
+            className="grocery-add-input"
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            placeholder="Add item…"
+            disabled={adding}
+          />
+          <button type="submit" className="btn-primary" disabled={adding || !draft.trim()}>
+            Add
+          </button>
+        </form>
+        <button className="btn-from-recipe" onClick={() => setPickerOpen(true)}>
+          + From recipe
         </button>
-      </form>
+      </div>
 
       {items.length === 0 && (
         <div className="grocery-empty">
           <p>Your list is empty.</p>
-          <p className="grocery-empty-hint">Add items above, or use "Add to grocery list" on any recipe.</p>
+          <p className="grocery-empty-hint">Type an item above or click "+ From recipe" to pull in ingredients.</p>
         </div>
       )}
 
@@ -123,6 +136,89 @@ export default function GroceryList() {
           <GroceryItems items={checked} onToggle={handleToggle} onDelete={handleDelete} checked />
         </section>
       )}
+
+      {pickerOpen && (
+        <RecipePicker
+          onAdd={handleAddFromRecipe}
+          onClose={() => setPickerOpen(false)}
+          addedTitles={Object.keys(byRecipe)}
+        />
+      )}
+    </div>
+  );
+}
+
+function RecipePicker({ onAdd, onClose, addedTitles }) {
+  const [recipes, setRecipes] = useState([]);
+  const [query, setQuery] = useState('');
+  const [adding, setAdding] = useState(null);
+  const [added, setAdded] = useState(new Set(addedTitles));
+  const inputRef = useRef();
+
+  useEffect(() => {
+    api.listRecipes().then((all) => setRecipes(all.filter((r) => r.type !== 'drink' && r.ingredients?.length)));
+    setTimeout(() => inputRef.current?.focus(), 50);
+  }, []);
+
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
+
+  const filtered = recipes.filter((r) =>
+    !query || r.title.toLowerCase().includes(query.toLowerCase())
+  );
+
+  async function handlePick(recipe) {
+    if (adding) return;
+    setAdding(recipe.id);
+    try {
+      await onAdd(recipe);
+      setAdded((prev) => new Set([...prev, recipe.title]));
+    } finally {
+      setAdding(null);
+    }
+  }
+
+  return (
+    <div className="picker-backdrop" onClick={onClose}>
+      <div className="picker-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="picker-top">
+          <h2>Add from recipe</h2>
+          <button className="picker-close" onClick={onClose}>×</button>
+        </div>
+        <input
+          ref={inputRef}
+          className="picker-search"
+          placeholder="Search recipes…"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
+        <ul className="picker-list">
+          {filtered.length === 0 && (
+            <li className="picker-empty">No recipes with ingredients found.</li>
+          )}
+          {filtered.map((r) => {
+            const isAdded = added.has(r.title);
+            const isAdding = adding === r.id;
+            return (
+              <li key={r.id}>
+                <button
+                  className={`picker-item${isAdded ? ' picker-item--added' : ''}`}
+                  onClick={() => handlePick(r)}
+                  disabled={isAdding}
+                >
+                  <span className="picker-item-title">{r.title}</span>
+                  <span className="picker-item-count">
+                    {isAdding ? '…' : isAdded ? '✓ Added' : `${r.ingredients.length} items`}
+                  </span>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
     </div>
   );
 }
