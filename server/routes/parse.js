@@ -1,8 +1,10 @@
 const express = require('express');
 const multer = require('multer');
 const path = require('path');
+const fs = require('fs');
 const crypto = require('crypto');
 const { createWorker } = require('tesseract.js');
+const pdfParse = require('pdf-parse');
 
 const router = express.Router();
 
@@ -19,7 +21,8 @@ const storage = multer.diskStorage({
 const upload = multer({
   storage,
   limits: { fileSize: 20 * 1024 * 1024 },
-  fileFilter: (_req, file, cb) => cb(null, /jpeg|jpg|png|gif|webp|avif/.test(file.mimetype)),
+  fileFilter: (_req, file, cb) =>
+    cb(null, /jpeg|jpg|png|gif|webp|avif|pdf/.test(file.mimetype.replace('application/', ''))),
 });
 
 // Section header patterns
@@ -71,7 +74,7 @@ function parseText(raw) {
     }
   }
 
-  // Fallback: if no sections found, detect ingredients heuristically
+  // Fallback: heuristic ingredient detection if no sections found
   if (!ingredients.length && !instructions.length) {
     for (const line of lines.slice(1)) {
       const m = line.match(ING_RE);
@@ -89,25 +92,38 @@ function parseText(raw) {
   };
 }
 
+async function extractText(filePath, mimetype) {
+  if (mimetype === 'application/pdf') {
+    const buffer = fs.readFileSync(filePath);
+    const data = await pdfParse(buffer);
+    return data.text;
+  }
+  // Image: use tesseract OCR
+  const worker = await createWorker('eng', 1, {
+    cachePath: path.join(__dirname, '..', '..', '.tesseract-cache'),
+    logger: () => {},
+  });
+  try {
+    const { data: { text } } = await worker.recognize(filePath);
+    return text;
+  } finally {
+    await worker.terminate();
+  }
+}
+
 // POST /api/parse-recipe  (multipart/form-data, field: image)
 router.post('/', upload.single('image'), async (req, res) => {
-  if (!req.file) return res.status(400).json({ error: 'No image uploaded' });
+  if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
 
   const filePath = path.join(UPLOADS_DIR, req.file.filename);
-
-  let worker;
   try {
-    worker = await createWorker('eng', 1, {
-      cachePath: path.join(__dirname, '..', '..', '.tesseract-cache'),
-      logger: () => {},
-    });
-    const { data: { text } } = await worker.recognize(filePath);
+    const text = await extractText(filePath, req.file.mimetype);
     const recipe = parseText(text);
-    res.json({ filename: req.file.filename, recipe });
+    // PDFs don't become the recipe photo, so only return filename for images
+    const isPdf = req.file.mimetype === 'application/pdf';
+    res.json({ filename: isPdf ? null : req.file.filename, recipe });
   } catch (err) {
     res.status(500).json({ error: err.message });
-  } finally {
-    if (worker) await worker.terminate();
   }
 });
 

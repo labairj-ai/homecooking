@@ -136,13 +136,13 @@ export default function AddEdit() {
           ? `<ol>${recipe.instructions.map((s) => `<li>${s}</li>`).join('')}</ol>`
           : f.instructions,
         notes: recipe.notes || f.notes,
-        image_path: filename,
+        image_path: filename || f.image_path,
       }));
       if (recipe.ingredients?.length) {
         const valid = recipe.ingredients.filter((i) => i.name?.trim());
         if (valid.length) setIngredients(valid.map((i) => ({ name: i.name, amount: i.amount || '', unit: i.unit || '' })));
       }
-      setImagePreview(`/uploads/${filename}`);
+      if (filename) setImagePreview(`/uploads/${filename}`);
     } catch (err) {
       setParseError(err.message);
     } finally {
@@ -182,11 +182,11 @@ export default function AddEdit() {
             <label htmlFor="parse-file" className={`btn-parse${parsing ? ' btn-parse--loading' : ''}`}>
               {parsing ? '⏳ Parsing…' : '📷 Parse from photo'}
             </label>
-            <p className="parse-hint">Take or upload a photo of a recipe to auto-fill the form</p>
+            <p className="parse-hint">Upload a photo or PDF of a recipe to auto-fill the form</p>
             <input
               id="parse-file"
               type="file"
-              accept="image/*"
+              accept="image/*,.pdf"
               ref={parseFileRef}
               onChange={handleParseImage}
               style={{ display: 'none' }}
