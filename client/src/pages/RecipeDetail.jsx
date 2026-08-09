@@ -37,7 +37,7 @@ export default function RecipeDetail() {
 
   const handleAddToList = useCallback(async () => {
     const items = (recipe?.ingredients || [])
-      .filter((i) => i.name)
+      .filter((i) => i.name && i.step_group?.trim().toLowerCase() !== 'bake')
       .map((i) => ({ name: i.name, amount: i.amount || null, unit: i.unit || null, recipe_id: recipe.id, recipe_title: recipe.title }));
     if (!items.length) return;
     await api.addGroceryItems(items);
