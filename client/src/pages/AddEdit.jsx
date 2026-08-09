@@ -85,6 +85,16 @@ export default function AddEdit() {
     setIngredients((prev) => prev.length > 1 ? prev.filter((_, i) => i !== idx) : prev);
   }
 
+  function moveIng(idx, dir) {
+    setIngredients((prev) => {
+      const next = [...prev];
+      const target = idx + dir;
+      if (target < 0 || target >= next.length) return prev;
+      [next[idx], next[target]] = [next[target], next[idx]];
+      return next;
+    });
+  }
+
   function addTag(e) {
     if (e) e.preventDefault();
     const t = tagDraft.trim().toLowerCase();
@@ -350,7 +360,8 @@ export default function AddEdit() {
             </div>
             <div className="ingredients-editor">
               {showSteps && (
-                <div className="ing-row ing-row-header">
+                <div className="ing-row ing-row--with-steps ing-row-header">
+                  <span />
                   <span className="ing-col-label">Amount</span>
                   <span className="ing-col-label">Unit</span>
                   <span className="ing-col-label">Name</span>
@@ -360,6 +371,14 @@ export default function AddEdit() {
               )}
               {ingredients.map((ing, idx) => (
                 <div key={idx} className={`ing-row${showSteps ? ' ing-row--with-steps' : ''}`}>
+                  <div className="ing-move">
+                    {idx > 0 && (
+                      <button type="button" className="btn-move" onClick={() => moveIng(idx, -1)} title="Move up">↑</button>
+                    )}
+                    {idx < ingredients.length - 1 && (
+                      <button type="button" className="btn-move" onClick={() => moveIng(idx, 1)} title="Move down">↓</button>
+                    )}
+                  </div>
                   <input
                     className="ing-input ing-amount"
                     value={ing.amount}

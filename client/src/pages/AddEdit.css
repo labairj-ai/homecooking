@@ -127,12 +127,12 @@
 .ingredients-editor { display: flex; flex-direction: column; gap: 0.5rem; }
 .ing-row {
   display: grid;
-  grid-template-columns: 90px 110px 1fr 32px;
+  grid-template-columns: 28px 90px 110px 1fr 32px;
   gap: 0.5rem;
   align-items: center;
 }
 .ing-row--with-steps {
-  grid-template-columns: 90px 110px 1fr 80px 32px;
+  grid-template-columns: 28px 90px 110px 1fr 80px 32px;
 }
 .ing-row-header {
   font-size: 0.7rem;
@@ -147,13 +147,37 @@
 .ing-col-label { font-size: 0.7rem; }
 .ing-input { font-size: 0.875rem; }
 .ing-step { font-size: 0.8rem; }
+.ing-move {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+}
+.btn-move {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  line-height: 1;
+  cursor: pointer;
+  width: 20px;
+  height: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 3px;
+  transition: color 0.1s, background 0.1s;
+}
+.btn-move:hover { color: var(--text); background: var(--surface2); }
 .ing-remove { font-size: 1.2rem; color: var(--text-muted); }
 .ing-remove:hover { color: var(--accent); background: var(--accent-light); }
 .add-ing-btn { align-self: flex-start; margin-top: 0.25rem; font-size: 0.85rem; }
 
 @media (max-width: 500px) {
-  .ing-row { grid-template-columns: 70px 90px 1fr 28px; }
-  .ing-row--with-steps { grid-template-columns: 70px 90px 1fr 65px 28px; }
+  .ing-row { grid-template-columns: 28px 70px 90px 1fr 28px; }
+  .ing-row--with-steps { grid-template-columns: 28px 70px 90px 1fr 65px 28px; }
 }
 
 .tags-input {
