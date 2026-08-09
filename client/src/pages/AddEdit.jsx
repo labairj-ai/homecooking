@@ -10,6 +10,7 @@ const UNITS = [
   '', 'tsp', 'tbsp', 'cup', 'oz', 'fl oz', 'lb', 'g', 'kg', 'ml', 'L',
   'pinch', 'dash', 'splash', 'to taste',
   'whole', 'slice', 'clove', 'can', 'bunch', 'sprig', 'piece',
+  'sec', 'min', 'hr',
 ];
 
 export default function AddEdit() {
