@@ -1,12 +1,19 @@
 import './FlowTable.css';
 
+const norm = (s) => s?.trim().toLowerCase() ?? '';
+
 export default function FlowTable({ ingredients, description }) {
+  // Deduplicate case-insensitively; first-seen casing wins for display
   const steps = [];
-  const seen = new Set();
+  const canonicalMap = new Map(); // lowercase → display string
+
   for (const ing of ingredients) {
-    if (ing.step_group && !seen.has(ing.step_group)) {
-      steps.push(ing.step_group);
-      seen.add(ing.step_group);
+    const raw = ing.step_group?.trim();
+    if (!raw) continue;
+    const key = raw.toLowerCase();
+    if (!canonicalMap.has(key)) {
+      canonicalMap.set(key, raw);
+      steps.push(raw);
     }
   }
 
@@ -15,12 +22,13 @@ export default function FlowTable({ ingredients, description }) {
   // For each step, find consecutive runs of ingredients belonging to it
   const stepRuns = {};
   for (const step of steps) {
+    const stepKey = step.toLowerCase();
     stepRuns[step] = [];
     let i = 0;
     while (i < ingredients.length) {
-      if (ingredients[i].step_group === step) {
+      if (norm(ingredients[i].step_group) === stepKey) {
         let span = 1;
-        while (i + span < ingredients.length && ingredients[i + span].step_group === step) span++;
+        while (i + span < ingredients.length && norm(ingredients[i + span].step_group) === stepKey) span++;
         stepRuns[step].push({ startRow: i, span });
         i += span;
       } else {
@@ -41,7 +49,7 @@ export default function FlowTable({ ingredients, description }) {
     return { ing, cells };
   });
 
-  const ungrouped = ingredients.filter((i) => !i.step_group);
+  const ungrouped = ingredients.filter((i) => !i.step_group?.trim());
 
   return (
     <div className="flow-wrap">
@@ -66,7 +74,7 @@ export default function FlowTable({ ingredients, description }) {
                 <td className="flow-td flow-td--ing">
                   {(ing.amount || ing.unit) && (
                     <span className="flow-ing-amount">
-                      {[ing.amount, ing.unit].filter(Boolean).join(' ')}
+                      {[ing.amount, ing.unit].filter(Boolean).join(' ')}
                     </span>
                   )}{' '}
                   <span className="flow-ing-name">{ing.name}</span>
@@ -91,7 +99,7 @@ export default function FlowTable({ ingredients, description }) {
           {ungrouped.map((ing, i) => (
             <li key={i} className="ingredient-row">
               <span className="ing-amount">
-                {[ing.amount, ing.unit].filter(Boolean).join(' ')}
+                {[ing.amount, ing.unit].filter(Boolean).join(' ')}
               </span>
               <span className="ing-name">{ing.name}</span>
             </li>

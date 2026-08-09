@@ -194,7 +194,11 @@ export default function AddEdit() {
     setSaving(true);
     setError(null);
     try {
-      const payload = { ...form, ingredients: validIngs, tags };
+      const payload = {
+        ...form,
+        ingredients: validIngs.map(ing => ({ ...ing, step_group: ing.step_group?.trim() || '' })),
+        tags,
+      };
       const saved = isEdit
         ? await api.updateRecipe(id, payload)
         : await api.createRecipe(payload);
@@ -369,55 +373,73 @@ export default function AddEdit() {
                   <span />
                 </div>
               )}
-              {ingredients.map((ing, idx) => (
-                <div key={idx} className={`ing-row${showSteps ? ' ing-row--with-steps' : ''}`}>
-                  <div className="ing-move">
-                    {idx > 0 && (
-                      <button type="button" className="btn-move" onClick={() => moveIng(idx, -1)} title="Move up">↑</button>
-                    )}
-                    {idx < ingredients.length - 1 && (
-                      <button type="button" className="btn-move" onClick={() => moveIng(idx, 1)} title="Move down">↓</button>
-                    )}
-                  </div>
-                  <input
-                    className="ing-input ing-amount"
-                    value={ing.amount}
-                    onChange={(e) => setIng(idx, 'amount', e.target.value)}
-                    placeholder="Amount"
-                  />
-                  <select
-                    className="ing-input ing-unit"
-                    value={ing.unit}
-                    onChange={(e) => setIng(idx, 'unit', e.target.value)}
-                  >
-                    {UNITS.map((u) => (
-                      <option key={u} value={u}>{u || '— unit —'}</option>
+              {(() => {
+                const stepOptions = [...new Map(
+                  ingredients
+                    .map(i => i.step_group?.trim())
+                    .filter(Boolean)
+                    .map(s => [s.toLowerCase(), s])
+                ).values()];
+                return (
+                  <>
+                    {ingredients.map((ing, idx) => (
+                      <div key={idx} className={`ing-row${showSteps ? ' ing-row--with-steps' : ''}`}>
+                        <div className="ing-move">
+                          {idx > 0 && (
+                            <button type="button" className="btn-move" onClick={() => moveIng(idx, -1)} title="Move up">↑</button>
+                          )}
+                          {idx < ingredients.length - 1 && (
+                            <button type="button" className="btn-move" onClick={() => moveIng(idx, 1)} title="Move down">↓</button>
+                          )}
+                        </div>
+                        <input
+                          className="ing-input ing-amount"
+                          value={ing.amount}
+                          onChange={(e) => setIng(idx, 'amount', e.target.value)}
+                          placeholder="Amount"
+                        />
+                        <select
+                          className="ing-input ing-unit"
+                          value={ing.unit}
+                          onChange={(e) => setIng(idx, 'unit', e.target.value)}
+                        >
+                          {UNITS.map((u) => (
+                            <option key={u} value={u}>{u || '— unit —'}</option>
+                          ))}
+                        </select>
+                        <input
+                          className="ing-input ing-name"
+                          value={ing.name}
+                          onChange={(e) => setIng(idx, 'name', e.target.value)}
+                          placeholder="Ingredient name *"
+                        />
+                        {showSteps && (
+                          <input
+                            className="ing-input ing-step"
+                            value={ing.step_group || ''}
+                            onChange={(e) => setIng(idx, 'step_group', e.target.value)}
+                            placeholder="e.g. Melt"
+                            list="step-options"
+                          />
+                        )}
+                        <button
+                          type="button"
+                          className="btn-icon ing-remove"
+                          onClick={() => removeIng(idx)}
+                          title="Remove"
+                        >
+                          ×
+                        </button>
+                      </div>
                     ))}
-                  </select>
-                  <input
-                    className="ing-input ing-name"
-                    value={ing.name}
-                    onChange={(e) => setIng(idx, 'name', e.target.value)}
-                    placeholder="Ingredient name *"
-                  />
-                  {showSteps && (
-                    <input
-                      className="ing-input ing-step"
-                      value={ing.step_group || ''}
-                      onChange={(e) => setIng(idx, 'step_group', e.target.value)}
-                      placeholder="e.g. Melt"
-                    />
-                  )}
-                  <button
-                    type="button"
-                    className="btn-icon ing-remove"
-                    onClick={() => removeIng(idx)}
-                    title="Remove"
-                  >
-                    ×
-                  </button>
-                </div>
-              ))}
+                    {showSteps && (
+                      <datalist id="step-options">
+                        {stepOptions.map(s => <option key={s} value={s} />)}
+                      </datalist>
+                    )}
+                  </>
+                );
+              })()}
               <button type="button" className="btn-secondary add-ing-btn" onClick={addIng}>
                 + Add Ingredient
               </button>
