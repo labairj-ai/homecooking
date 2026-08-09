@@ -8,7 +8,7 @@ Personal recipe and drink manager split into two siloed sections: **My Kitchen**
 - **Recipes & Cocktails** — separate types with subcategories (Breakfast, Lunch, Dinner, Dessert)
 - **Ingredient search** — find recipes that contain all queried ingredients
 - **Rich text editor** — TipTap-powered instructions and notes with formatting
-- **Ingredients** — amounts, units (including time units: sec/min/hr), and names with optional **Flow step labels**; rows are reorderable with ↑/↓ buttons
+- **Ingredients** — amounts, units (including time units: sec/min/hr), and names with optional **Flow step labels**; rows are reorderable via drag-and-drop (desktop mouse and mobile touch)
 - **Flow Table view** — toggle on any recipe detail page to see a matrix layout: ingredients as rows, cooking steps as columns, with merged cells showing which ingredients combine at each step (mirrors the visual "table recipe" format). The recipe description appears as a full-width prep header row. Step labels are case-insensitive and deduplicated; the step field offers a datalist dropdown of existing steps to prevent naming drift.
 - **Cook Mode** — full-screen step-by-step overlay with Wake Lock (keeps screen on)
 - **Grocery List** — add all ingredients from any recipe with one tap; manual add; checkbox/clear

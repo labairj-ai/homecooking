@@ -1,10 +1,24 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+  useSortable,
+  arrayMove,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { api } from '../api';
 import RichEditor from '../components/RichEditor';
 import './AddEdit.css';
 
-const EMPTY_ING = () => ({ name: '', amount: '', unit: '', step_group: '' });
+const EMPTY_ING = () => ({ name: '', amount: '', unit: '', step_group: '', _uid: crypto.randomUUID() });
 
 const UNITS = [
   '', 'tsp', 'tbsp', 'cup', 'oz', 'fl oz', 'lb', 'g', 'kg', 'ml', 'L',
@@ -12,6 +26,54 @@ const UNITS = [
   'whole', 'slice', 'clove', 'can', 'bunch', 'sprig', 'piece',
   'sec', 'min', 'hr',
 ];
+
+function SortableIngRow({ ing, idx, showSteps, onSetIng, onRemove }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: ing._uid });
+  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 };
+  return (
+    <div ref={setNodeRef} style={style} className={`ing-row${showSteps ? ' ing-row--with-steps' : ''}`}>
+      <div className="ing-handle" {...attributes} {...listeners} title="Drag to reorder">⠿</div>
+      <input
+        className="ing-input ing-amount"
+        value={ing.amount}
+        onChange={(e) => onSetIng(idx, 'amount', e.target.value)}
+        placeholder="Amount"
+      />
+      <select
+        className="ing-input ing-unit"
+        value={ing.unit}
+        onChange={(e) => onSetIng(idx, 'unit', e.target.value)}
+      >
+        {UNITS.map((u) => (
+          <option key={u} value={u}>{u || '— unit —'}</option>
+        ))}
+      </select>
+      <input
+        className="ing-input ing-name"
+        value={ing.name}
+        onChange={(e) => onSetIng(idx, 'name', e.target.value)}
+        placeholder="Ingredient name *"
+      />
+      {showSteps && (
+        <input
+          className="ing-input ing-step"
+          value={ing.step_group || ''}
+          onChange={(e) => onSetIng(idx, 'step_group', e.target.value)}
+          placeholder="e.g. Melt"
+          list="step-options"
+        />
+      )}
+      <button
+        type="button"
+        className="btn-icon ing-remove"
+        onClick={() => onRemove(idx)}
+        title="Remove"
+      >
+        ×
+      </button>
+    </div>
+  );
+}
 
 export default function AddEdit() {
   const { id } = useParams();
@@ -48,6 +110,10 @@ export default function AddEdit() {
   const fileRef = useRef();
   const pdfFileRef = useRef();
 
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
+  );
+
   useEffect(() => {
     if (!isEdit) return;
     api.getRecipe(id).then((recipe) => {
@@ -63,7 +129,8 @@ export default function AddEdit() {
         focal_x: recipe.focal_x ?? 50,
         focal_y: recipe.focal_y ?? 50,
       });
-      const ings = recipe.ingredients.length ? recipe.ingredients : [EMPTY_ING()];
+      const raw = recipe.ingredients.length ? recipe.ingredients : [EMPTY_ING()];
+      const ings = raw.map((i) => ({ ...i, _uid: crypto.randomUUID() }));
       setIngredients(ings);
       if (ings.some((i) => i.step_group)) setShowSteps(true);
       setTags(recipe.tags || []);
@@ -85,13 +152,12 @@ export default function AddEdit() {
     setIngredients((prev) => prev.length > 1 ? prev.filter((_, i) => i !== idx) : prev);
   }
 
-  function moveIng(idx, dir) {
+  function handleDragEnd({ active, over }) {
+    if (!over || active.id === over.id) return;
     setIngredients((prev) => {
-      const next = [...prev];
-      const target = idx + dir;
-      if (target < 0 || target >= next.length) return prev;
-      [next[idx], next[target]] = [next[target], next[idx]];
-      return next;
+      const from = prev.findIndex((i) => i._uid === active.id);
+      const to = prev.findIndex((i) => i._uid === over.id);
+      return arrayMove(prev, from, to);
     });
   }
 
@@ -150,7 +216,15 @@ export default function AddEdit() {
     }));
     if (recipe.ingredients?.length) {
       const valid = recipe.ingredients.filter((i) => i.name?.trim());
-      if (valid.length) setIngredients(valid.map((i) => ({ name: i.name, amount: i.amount || '', unit: i.unit || '', step_group: i.step_group || '' })));
+      if (valid.length) {
+        setIngredients(valid.map((i) => ({
+          name: i.name,
+          amount: i.amount || '',
+          unit: i.unit || '',
+          step_group: i.step_group || '',
+          _uid: crypto.randomUUID(),
+        })));
+      }
     }
     if (filename) setImagePreview(`/uploads/${filename}`);
   }
@@ -196,7 +270,7 @@ export default function AddEdit() {
     try {
       const payload = {
         ...form,
-        ingredients: validIngs.map(ing => ({ ...ing, step_group: ing.step_group?.trim() || '' })),
+        ingredients: validIngs.map(({ _uid, ...ing }) => ({ ...ing, step_group: ing.step_group?.trim() || '' })),
         tags,
       };
       const saved = isEdit
@@ -208,6 +282,13 @@ export default function AddEdit() {
       setSaving(false);
     }
   }
+
+  const stepOptions = [...new Map(
+    ingredients
+      .map((i) => i.step_group?.trim())
+      .filter(Boolean)
+      .map((s) => [s.toLowerCase(), s])
+  ).values()];
 
   return (
     <div className="addedit">
@@ -373,73 +454,25 @@ export default function AddEdit() {
                   <span />
                 </div>
               )}
-              {(() => {
-                const stepOptions = [...new Map(
-                  ingredients
-                    .map(i => i.step_group?.trim())
-                    .filter(Boolean)
-                    .map(s => [s.toLowerCase(), s])
-                ).values()];
-                return (
-                  <>
-                    {ingredients.map((ing, idx) => (
-                      <div key={idx} className={`ing-row${showSteps ? ' ing-row--with-steps' : ''}`}>
-                        <div className="ing-move">
-                          {idx > 0 && (
-                            <button type="button" className="btn-move" onClick={() => moveIng(idx, -1)} title="Move up">↑</button>
-                          )}
-                          {idx < ingredients.length - 1 && (
-                            <button type="button" className="btn-move" onClick={() => moveIng(idx, 1)} title="Move down">↓</button>
-                          )}
-                        </div>
-                        <input
-                          className="ing-input ing-amount"
-                          value={ing.amount}
-                          onChange={(e) => setIng(idx, 'amount', e.target.value)}
-                          placeholder="Amount"
-                        />
-                        <select
-                          className="ing-input ing-unit"
-                          value={ing.unit}
-                          onChange={(e) => setIng(idx, 'unit', e.target.value)}
-                        >
-                          {UNITS.map((u) => (
-                            <option key={u} value={u}>{u || '— unit —'}</option>
-                          ))}
-                        </select>
-                        <input
-                          className="ing-input ing-name"
-                          value={ing.name}
-                          onChange={(e) => setIng(idx, 'name', e.target.value)}
-                          placeholder="Ingredient name *"
-                        />
-                        {showSteps && (
-                          <input
-                            className="ing-input ing-step"
-                            value={ing.step_group || ''}
-                            onChange={(e) => setIng(idx, 'step_group', e.target.value)}
-                            placeholder="e.g. Melt"
-                            list="step-options"
-                          />
-                        )}
-                        <button
-                          type="button"
-                          className="btn-icon ing-remove"
-                          onClick={() => removeIng(idx)}
-                          title="Remove"
-                        >
-                          ×
-                        </button>
-                      </div>
-                    ))}
-                    {showSteps && (
-                      <datalist id="step-options">
-                        {stepOptions.map(s => <option key={s} value={s} />)}
-                      </datalist>
-                    )}
-                  </>
-                );
-              })()}
+              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                <SortableContext items={ingredients.map((i) => i._uid)} strategy={verticalListSortingStrategy}>
+                  {ingredients.map((ing, idx) => (
+                    <SortableIngRow
+                      key={ing._uid}
+                      ing={ing}
+                      idx={idx}
+                      showSteps={showSteps}
+                      onSetIng={setIng}
+                      onRemove={removeIng}
+                    />
+                  ))}
+                </SortableContext>
+              </DndContext>
+              {showSteps && (
+                <datalist id="step-options">
+                  {stepOptions.map((s) => <option key={s} value={s} />)}
+                </datalist>
+              )}
               <button type="button" className="btn-secondary add-ing-btn" onClick={addIng}>
                 + Add Ingredient
               </button>
