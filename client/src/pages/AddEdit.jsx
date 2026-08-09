@@ -4,7 +4,7 @@ import { api } from '../api';
 import RichEditor from '../components/RichEditor';
 import './AddEdit.css';
 
-const EMPTY_ING = () => ({ name: '', amount: '', unit: '' });
+const EMPTY_ING = () => ({ name: '', amount: '', unit: '', step_group: '' });
 
 const UNITS = [
   '', 'tsp', 'tbsp', 'cup', 'oz', 'fl oz', 'lb', 'g', 'kg', 'ml', 'L',
@@ -33,6 +33,7 @@ export default function AddEdit() {
     focal_y: 50,
   });
   const [ingredients, setIngredients] = useState([EMPTY_ING()]);
+  const [showSteps, setShowSteps] = useState(false);
   const [tags, setTags] = useState([]);
   const [tagDraft, setTagDraft] = useState('');
   const [imagePreview, setImagePreview] = useState(null);
@@ -44,7 +45,7 @@ export default function AddEdit() {
   const [parseError, setParseError] = useState(null);
   const [urlDraft, setUrlDraft] = useState('');
   const fileRef = useRef();
-  const parseFileRef = useRef();
+  const pdfFileRef = useRef();
 
   useEffect(() => {
     if (!isEdit) return;
@@ -61,7 +62,9 @@ export default function AddEdit() {
         focal_x: recipe.focal_x ?? 50,
         focal_y: recipe.focal_y ?? 50,
       });
-      setIngredients(recipe.ingredients.length ? recipe.ingredients : [EMPTY_ING()]);
+      const ings = recipe.ingredients.length ? recipe.ingredients : [EMPTY_ING()];
+      setIngredients(ings);
+      if (ings.some((i) => i.step_group)) setShowSteps(true);
       setTags(recipe.tags || []);
       if (recipe.image_path) setImagePreview(`/uploads/${recipe.image_path}`);
     });
@@ -136,7 +139,7 @@ export default function AddEdit() {
     }));
     if (recipe.ingredients?.length) {
       const valid = recipe.ingredients.filter((i) => i.name?.trim());
-      if (valid.length) setIngredients(valid.map((i) => ({ name: i.name, amount: i.amount || '', unit: i.unit || '' })));
+      if (valid.length) setIngredients(valid.map((i) => ({ name: i.name, amount: i.amount || '', unit: i.unit || '', step_group: i.step_group || '' })));
     }
     if (filename) setImagePreview(`/uploads/${filename}`);
   }
@@ -157,7 +160,7 @@ export default function AddEdit() {
     }
   }
 
-  async function handleParseImage(e) {
+  async function handleParsePdf(e) {
     const file = e.target.files[0];
     if (!file) return;
     setParsing(true);
@@ -169,7 +172,7 @@ export default function AddEdit() {
       setParseError(err.message);
     } finally {
       setParsing(false);
-      if (parseFileRef.current) parseFileRef.current.value = '';
+      if (pdfFileRef.current) pdfFileRef.current.value = '';
     }
   }
 
@@ -221,16 +224,16 @@ export default function AddEdit() {
             </div>
             <div className="parse-or">
               <label htmlFor="parse-file" className={`btn-parse-secondary${parsing ? ' btn-parse--loading' : ''}`}>
-                {parsing ? '⏳ Parsing…' : '📷 Photo / PDF'}
+                {parsing ? '⏳ Parsing…' : '📄 Import PDF'}
               </label>
-              <span className="parse-hint">Upload a photo or PDF to extract via OCR</span>
+              <span className="parse-hint">Upload a PDF recipe to extract text</span>
             </div>
             <input
               id="parse-file"
               type="file"
-              accept="image/*,.pdf"
-              ref={parseFileRef}
-              onChange={handleParseImage}
+              accept=".pdf,application/pdf"
+              ref={pdfFileRef}
+              onChange={handleParsePdf}
               style={{ display: 'none' }}
               disabled={parsing || fetching}
             />
@@ -333,10 +336,29 @@ export default function AddEdit() {
 
         {form.type !== 'drink' && (
           <div className="form-field">
-            <label>Ingredients</label>
+            <div className="ing-label-row">
+              <label>Ingredients</label>
+              <button
+                type="button"
+                className={`btn-flow-toggle${showSteps ? ' btn-flow-toggle--on' : ''}`}
+                onClick={() => setShowSteps((s) => !s)}
+                title="Add flow step labels to group ingredients by cooking step"
+              >
+                {showSteps ? 'Hide steps' : '+ Flow steps'}
+              </button>
+            </div>
             <div className="ingredients-editor">
+              {showSteps && (
+                <div className="ing-row ing-row-header">
+                  <span className="ing-col-label">Amount</span>
+                  <span className="ing-col-label">Unit</span>
+                  <span className="ing-col-label">Name</span>
+                  <span className="ing-col-label">Step</span>
+                  <span />
+                </div>
+              )}
               {ingredients.map((ing, idx) => (
-                <div key={idx} className="ing-row">
+                <div key={idx} className={`ing-row${showSteps ? ' ing-row--with-steps' : ''}`}>
                   <input
                     className="ing-input ing-amount"
                     value={ing.amount}
@@ -358,6 +380,14 @@ export default function AddEdit() {
                     onChange={(e) => setIng(idx, 'name', e.target.value)}
                     placeholder="Ingredient name *"
                   />
+                  {showSteps && (
+                    <input
+                      className="ing-input ing-step"
+                      value={ing.step_group || ''}
+                      onChange={(e) => setIng(idx, 'step_group', e.target.value)}
+                      placeholder="e.g. Melt"
+                    />
+                  )}
                   <button
                     type="button"
                     className="btn-icon ing-remove"

@@ -95,4 +95,9 @@ if (userVersion < 3) {
   db.pragma('user_version = 3');
 }
 
+if (userVersion < 4) {
+  db.exec(`ALTER TABLE ingredients ADD COLUMN step_group TEXT`);
+  db.pragma('user_version = 4');
+}
+
 module.exports = db;

@@ -71,6 +71,34 @@
 }
 .btn-cook:hover { background: var(--accent-hover); }
 
+.ing-section-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.ing-view-toggle {
+  display: flex;
+  border: 1.5px solid var(--border);
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+.ing-view-btn {
+  background: none;
+  border: none;
+  border-radius: 0;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.25rem 0.75rem;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.ing-view-btn--active { background: var(--recipe); color: #fff; }
+.ing-view-btn:hover:not(.ing-view-btn--active) { background: var(--recipe-light); color: var(--recipe); }
+
 .btn-add-list {
   background: none;
   border: 1.5px solid var(--border);
@@ -108,6 +136,19 @@
   color: var(--text);
 }
 .notes-section { background: var(--surface2); border-radius: var(--radius); padding: 1rem 1.25rem; }
+
+.btn-share {
+  background: none;
+  border: 1.5px solid var(--border);
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  font-weight: 500;
+  padding: 0.45rem 1rem;
+  border-radius: 8px;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+.btn-share:hover { border-color: var(--accent); color: var(--accent); }
+.btn-share--done { border-color: var(--recipe); color: var(--recipe); background: var(--recipe-light); }
 
 .back-link { color: var(--text-muted); font-size: 0.875rem; margin-top: 0.5rem; }
 .back-link:hover { color: var(--accent); }

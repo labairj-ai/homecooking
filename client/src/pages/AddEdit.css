@@ -103,6 +103,27 @@
   line-height: 1;
 }
 
+.ing-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+.ing-label-row label { margin-bottom: 0; }
+
+.btn-flow-toggle {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.25rem 0.65rem;
+  border-radius: 20px;
+  border: 1.5px solid var(--border);
+  background: none;
+  color: var(--text-muted);
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+.btn-flow-toggle:hover { border-color: var(--recipe); color: var(--recipe); }
+.btn-flow-toggle--on { border-color: var(--recipe); color: var(--recipe); background: var(--recipe-light); }
+
 .ingredients-editor { display: flex; flex-direction: column; gap: 0.5rem; }
 .ing-row {
   display: grid;
@@ -110,13 +131,29 @@
   gap: 0.5rem;
   align-items: center;
 }
+.ing-row--with-steps {
+  grid-template-columns: 90px 110px 1fr 80px 32px;
+}
+.ing-row-header {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  padding: 0 0.1rem;
+  align-items: end;
+}
+.ing-row-header span { padding: 0; }
+.ing-col-label { font-size: 0.7rem; }
 .ing-input { font-size: 0.875rem; }
+.ing-step { font-size: 0.8rem; }
 .ing-remove { font-size: 1.2rem; color: var(--text-muted); }
 .ing-remove:hover { color: var(--accent); background: var(--accent-light); }
 .add-ing-btn { align-self: flex-start; margin-top: 0.25rem; font-size: 0.85rem; }
 
 @media (max-width: 500px) {
   .ing-row { grid-template-columns: 70px 90px 1fr 28px; }
+  .ing-row--with-steps { grid-template-columns: 70px 90px 1fr 65px 28px; }
 }
 
 .tags-input {

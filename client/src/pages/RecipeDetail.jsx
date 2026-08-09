@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { api } from '../api';
 import TypeBadge from '../components/TypeBadge';
 import CookMode from '../components/CookMode';
+import FlowTable from '../components/FlowTable';
 import './RecipeDetail.css';
 
 export default function RecipeDetail() {
@@ -14,6 +15,13 @@ export default function RecipeDetail() {
   const [deleting, setDeleting] = useState(false);
   const [cookMode, setCookMode] = useState(false);
   const [addedToList, setAddedToList] = useState(false);
+  const [shared, setShared] = useState(false);
+  const [ingView, setIngView] = useState(() => localStorage.getItem(`ingView-${id}`) || 'list');
+
+  function setView(v) {
+    setIngView(v);
+    localStorage.setItem(`ingView-${id}`, v);
+  }
 
   async function handleToggleFavorite() {
     const { is_favorite } = await api.toggleFavorite(id);
@@ -36,6 +44,21 @@ export default function RecipeDetail() {
     setAddedToList(true);
     setTimeout(() => setAddedToList(false), 3000);
   }, [recipe]);
+
+  async function handleShare() {
+    const url = window.location.href;
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: recipe.title, url });
+        return;
+      } catch (e) {
+        if (e.name === 'AbortError') return;
+      }
+    }
+    await navigator.clipboard.writeText(url);
+    setShared(true);
+    setTimeout(() => setShared(false), 2500);
+  }
 
   async function handleDelete() {
     if (!confirm('Delete this recipe? This cannot be undone.')) return;
@@ -87,6 +110,13 @@ export default function RecipeDetail() {
                 {recipe.is_favorite ? '★' : '☆'}
               </button>
             )}
+            <button
+              className={`btn-share${shared ? ' btn-share--done' : ''}`}
+              onClick={handleShare}
+              title="Copy link to share"
+            >
+              {shared ? '✓ Copied!' : '↗ Share'}
+            </button>
             <Link to={`/edit/${recipe.id}`} className="btn-secondary" style={{ padding: '0.45rem 1rem', borderRadius: 8, border: '1.5px solid var(--border)', fontSize: '0.875rem', fontWeight: 500 }}>
               Edit
             </Link>
@@ -102,29 +132,50 @@ export default function RecipeDetail() {
           <p className="detail-desc">{recipe.description}</p>
         )}
 
-        {recipe.ingredients?.length > 0 && (
-          <section className="detail-section">
-            <div className="section-header">
-              <h2>Ingredients</h2>
-              <button
-                className={`btn-add-list${addedToList ? ' btn-add-list--done' : ''}`}
-                onClick={handleAddToList}
-              >
-                {addedToList ? '✓ Added to list' : '+ Grocery list'}
-              </button>
-            </div>
-            <ul className="ingredients-list">
-              {recipe.ingredients.map((ing, i) => (
-                <li key={i} className="ingredient-row">
-                  <span className="ing-amount">
-                    {[ing.amount, ing.unit].filter(Boolean).join(' ')}
-                  </span>
-                  <span className="ing-name">{ing.name}</span>
-                </li>
-              ))}
-            </ul>
-          </section>
-        )}
+        {recipe.ingredients?.length > 0 && (() => {
+          const hasFlow = recipe.ingredients.some((i) => i.step_group);
+          return (
+            <section className="detail-section">
+              <div className="section-header">
+                <h2>Ingredients</h2>
+                <div className="ing-section-actions">
+                  {hasFlow && (
+                    <div className="ing-view-toggle">
+                      <button
+                        className={`ing-view-btn${ingView === 'list' ? ' ing-view-btn--active' : ''}`}
+                        onClick={() => setView('list')}
+                      >List</button>
+                      <button
+                        className={`ing-view-btn${ingView === 'flow' ? ' ing-view-btn--active' : ''}`}
+                        onClick={() => setView('flow')}
+                      >Flow</button>
+                    </div>
+                  )}
+                  <button
+                    className={`btn-add-list${addedToList ? ' btn-add-list--done' : ''}`}
+                    onClick={handleAddToList}
+                  >
+                    {addedToList ? '✓ Added to list' : '+ Grocery list'}
+                  </button>
+                </div>
+              </div>
+              {ingView === 'flow' && hasFlow ? (
+                <FlowTable ingredients={recipe.ingredients} description={recipe.description} />
+              ) : (
+                <ul className="ingredients-list">
+                  {recipe.ingredients.map((ing, i) => (
+                    <li key={i} className="ingredient-row">
+                      <span className="ing-amount">
+                        {[ing.amount, ing.unit].filter(Boolean).join(' ')}
+                      </span>
+                      <span className="ing-name">{ing.name}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+          );
+        })()}
 
         {recipe.instructions && (
           <section className="detail-section">

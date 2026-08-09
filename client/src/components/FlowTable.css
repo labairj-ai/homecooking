@@ -1,0 +1,81 @@
+.flow-wrap { display: flex; flex-direction: column; gap: 0.75rem; }
+
+.flow-scroll { overflow-x: auto; }
+
+.flow-table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.875rem;
+  border: 2px solid var(--recipe);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.flow-table th,
+.flow-table td {
+  border: 1px solid var(--recipe);
+  padding: 0.5rem 0.75rem;
+  vertical-align: middle;
+}
+
+.flow-prep-row td {
+  background: var(--recipe);
+  color: #fff;
+  font-weight: 600;
+  text-align: center;
+  font-size: 0.875rem;
+  letter-spacing: 0.01em;
+}
+
+.flow-th {
+  background: var(--recipe-light);
+  color: var(--recipe);
+  font-family: 'Inter', sans-serif;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  text-align: center;
+}
+
+.flow-th--ing {
+  text-align: left;
+  min-width: 180px;
+}
+
+.flow-th--step {
+  min-width: 72px;
+}
+
+.flow-td--ing {
+  background: var(--surface);
+}
+
+.flow-td--step {
+  background: var(--surface);
+  text-align: center;
+  min-width: 72px;
+}
+
+.flow-td--active {
+  background: var(--drink-light);
+}
+
+.flow-ing-amount {
+  color: var(--accent);
+  font-weight: 600;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.flow-ing-name {
+  color: var(--text);
+}
+
+.flow-ungrouped {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-top: 0.25rem;
+}

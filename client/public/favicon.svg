@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Terracotta rounded-square background -->
+  <rect width="32" height="32" rx="7" fill="#c84b2d"/>
+  <!-- Pan handle -->
+  <rect x="19.5" y="15" width="10.5" height="5" rx="2.5" fill="white"/>
+  <!-- Pan body (rim) -->
+  <circle cx="12.5" cy="17.5" r="8" fill="white"/>
+  <!-- Pan interior -->
+  <circle cx="12.5" cy="17.5" r="6.5" fill="#d9522f"/>
+  <!-- Egg white -->
+  <ellipse cx="12.5" cy="18" rx="4.2" ry="3.6" fill="#faf9f6"/>
+  <!-- Egg yolk -->
+  <circle cx="12.5" cy="17.5" r="2" fill="#f5a623"/>
+</svg>

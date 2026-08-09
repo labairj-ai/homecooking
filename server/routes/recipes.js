@@ -89,10 +89,10 @@ router.post('/', (req, res) => {
     const id = lastInsertRowid;
 
     const insertIng = db.prepare(
-      'INSERT INTO ingredients (recipe_id, name, amount, unit, order_idx) VALUES (?, ?, ?, ?, ?)'
+      'INSERT INTO ingredients (recipe_id, name, amount, unit, order_idx, step_group) VALUES (?, ?, ?, ?, ?, ?)'
     );
     ingredients.forEach((ing, idx) => {
-      insertIng.run(id, ing.name, ing.amount || null, ing.unit || null, idx);
+      insertIng.run(id, ing.name, ing.amount || null, ing.unit || null, idx, ing.step_group || null);
     });
 
     const insertTag = db.prepare('INSERT INTO tags (recipe_id, tag) VALUES (?, ?)');
@@ -139,10 +139,10 @@ router.put('/:id', (req, res) => {
 
     db.prepare('DELETE FROM ingredients WHERE recipe_id = ?').run(id);
     const insertIng = db.prepare(
-      'INSERT INTO ingredients (recipe_id, name, amount, unit, order_idx) VALUES (?, ?, ?, ?, ?)'
+      'INSERT INTO ingredients (recipe_id, name, amount, unit, order_idx, step_group) VALUES (?, ?, ?, ?, ?, ?)'
     );
     ingredients.forEach((ing, idx) => {
-      insertIng.run(id, ing.name, ing.amount || null, ing.unit || null, idx);
+      insertIng.run(id, ing.name, ing.amount || null, ing.unit || null, idx, ing.step_group || null);
     });
 
     db.prepare('DELETE FROM tags WHERE recipe_id = ?').run(id);
