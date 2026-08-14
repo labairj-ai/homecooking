@@ -15,13 +15,15 @@ Personal recipe and drink manager split into two siloed sections: **My Kitchen**
 - **Quick Capture** — import recipes from a URL, scanned photo (via `minicpm-v` vision AI), or PDF
 
 ### ✨ What Can I Make? (`/suggest`)
-Enter ingredients you have on hand and a local LLM (`phi4:14b`) generates a complete recipe or cocktail suggestion.
+Enter ingredients you have on hand, pick your options, and a local LLM generates recipe ideas.
 
-- **Real-time streaming** — tokens appear as phi4 generates them in a live text panel with a blinking cursor
-- **Food or cocktail** — two buttons let you choose which direction to take the ingredients
-- **Try Another** — cancels the current generation and immediately fires a new request for a fresh suggestion
-- **Save to My Kitchen** — one-click save that populates the full recipe (title, description, ingredients, instructions, notes) directly into the app
-- **Connection resilient** — 3-retry POST on network error; SSE stream reconnects on interruption; 6-minute server-side timeout for slow CPU inference
+- **Concept picker** — clicking Food or Cocktail first generates 3 short title+tagline ideas to choose from; pick the one that sounds right before committing to the full generation
+- **Real-time streaming** — tokens appear as the model generates them in a live text panel with a blinking cursor
+- **Model selector** — toggle between ⚡ Fast (`qwen2.5:7b`, ~30 sec) and ✦ Best (`phi4:14b`, 1–5 min)
+- **Cook time constraint** — pill chips (Any / < 30 min / 30–60 min / 1+ hour) added to the prompt as a soft constraint
+- **Try Another** — during streaming goes back to the concept cards to pick a different idea; New Concepts fetches a fresh set of 3
+- **Save to My Kitchen** — one-click save populates the full recipe directly into the app
+- **Connection resilient** — 3-retry POST on network error; SSE stream with reconnect handling; 6-minute server-side timeout for slow CPU inference
 
 ### My Cellar (`/cellar`)
 - **Wine, Beer & Spirits** — bottle/drink entries with subcategory filters
@@ -39,7 +41,7 @@ Enter ingredients you have on hand and a local LLM (`phi4:14b`) generates a comp
 - **Frontend**: React 18 + React Router + Vite
 - **Backend**: Express.js + better-sqlite3
 - **Image uploads**: Multer (stored in `/uploads/`, 20 MB max)
-- **AI**: [Ollama](https://ollama.com) running locally on the host — `phi4:14b` for recipe generation, `minicpm-v` for image parsing
+- **AI**: [Ollama](https://ollama.com) running locally on the host — `phi4:14b` / `qwen2.5:7b` for recipe generation, `minicpm-v` for image parsing
 
 ## Dev setup
 
@@ -50,7 +52,7 @@ npm run dev
 
 Runs the Express server and Vite dev server concurrently. App opens on the port shown in the terminal.
 
-AI features (`/suggest`, photo Quick Capture) require Ollama running on `localhost:11434` with `phi4:14b` and `minicpm-v` pulled.
+AI features (`/suggest`, photo Quick Capture) require Ollama running on `localhost:11434` with `phi4:14b`, `qwen2.5:7b`, and `minicpm-v` pulled.
 
 ## Deploy
 
