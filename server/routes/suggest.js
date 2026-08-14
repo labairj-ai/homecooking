@@ -181,14 +181,18 @@ router.post('/concepts', async (req, res) => {
   const label = type === 'cocktail' ? 'cocktail' : 'food recipe';
   const cookTimeNote = cookTime ? `Preference: ${cookTime} total time.\n` : '';
 
+  // Ollama format:"json" only guarantees a JSON object (not a bare array),
+  // so we wrap the list in an object and extract .concepts below.
   const prompt = `You are a culinary expert. Suggest 3 distinct ${label} concepts using some of these ingredients: ${ingredients.join(', ')}.
 ${cookTimeNote}
-Return ONLY a JSON array of exactly 3 objects — no text outside:
-[
-  {"title": "Recipe Name", "tagline": "One enticing sentence describing the dish."},
-  {"title": "Recipe Name 2", "tagline": "One enticing sentence."},
-  {"title": "Recipe Name 3", "tagline": "One enticing sentence."}
-]
+Return ONLY a JSON object in this exact structure — no text outside:
+{
+  "concepts": [
+    {"title": "Recipe Name", "tagline": "One enticing sentence describing the dish."},
+    {"title": "Recipe Name 2", "tagline": "One enticing sentence."},
+    {"title": "Recipe Name 3", "tagline": "One enticing sentence."}
+  ]
+}
 Make the 3 concepts meaningfully different from each other in style, technique, or flavor profile.`;
 
   try {
@@ -210,15 +214,19 @@ Make the 3 concepts meaningfully different from each other in style, technique, 
     const json = await ollamaRes.json();
     const text = (json.response || '').trim();
 
-    let concepts;
-    try { concepts = JSON.parse(text); }
+    let parsed;
+    try { parsed = JSON.parse(text); }
     catch {
-      const m2 = text.match(/\[[\s\S]*\]/);
-      if (m2) concepts = JSON.parse(m2[0]);
+      const m2 = text.match(/\{[\s\S]*\}/);
+      if (m2) parsed = JSON.parse(m2[0]);
       else throw new Error('Model response was not valid JSON');
     }
 
-    if (!Array.isArray(concepts)) throw new Error('Expected JSON array of concepts');
+    // Support both {concepts:[]} and bare [] responses
+    const concepts = Array.isArray(parsed) ? parsed : parsed.concepts;
+    if (!Array.isArray(concepts) || concepts.length === 0) {
+      throw new Error('Model did not return a concepts array');
+    }
     res.json({ concepts: concepts.slice(0, 3) });
   } catch (err) {
     res.status(500).json({ error: err.message });

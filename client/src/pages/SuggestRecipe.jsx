@@ -68,13 +68,15 @@ export default function SuggestRecipe() {
 
     try {
       let result;
+      let lastErr;
       for (let attempt = 0; attempt < 3; attempt++) {
         try {
           if (attempt > 0) await sleep(1500 * attempt);
           result = await api.suggestConcepts(ingredients, type, model, cookTime);
           break;
-        } catch (_) {
-          if (attempt === 2) throw new Error('Server unreachable after 3 attempts');
+        } catch (e) {
+          lastErr = e;
+          if (attempt === 2) throw lastErr;
         }
       }
       if (!result.concepts?.length) throw new Error('No concepts returned');
@@ -100,16 +102,18 @@ export default function SuggestRecipe() {
 
     try {
       let jobData;
+      let lastErr;
       for (let attempt = 0; attempt < 3; attempt++) {
         try {
           if (attempt > 0) {
-            setStreamText(`Network error — retrying (${attempt}/2)…`);
+            setStreamText(`Retrying (${attempt}/2)…`);
             await sleep(1500 * attempt);
           }
           jobData = await api.suggestRecipe(ingredients, type, model, cookTime, concept);
           break;
-        } catch (_) {
-          if (attempt === 2) throw new Error('Server unreachable after 3 attempts');
+        } catch (e) {
+          lastErr = e;
+          if (attempt === 2) throw lastErr;
         }
       }
 
