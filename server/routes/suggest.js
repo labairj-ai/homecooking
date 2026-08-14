@@ -13,7 +13,8 @@ setInterval(() => {
 
 function newJob() {
   const id = Math.random().toString(36).slice(2, 18);
-  _jobs.set(id, { status: 'pending', progress: 'Starting…', ts: Date.now() });
+  // tokens[] is appended by runJob; SSE stream reads from it in real time
+  _jobs.set(id, { status: 'pending', tokens: [], ts: Date.now() });
   return id;
 }
 
@@ -58,8 +59,9 @@ Write clear, detailed instructions. Do not truncate — complete the full recipe
 }
 
 async function runJob(jobId, ingredients, type) {
+  const job = _jobs.get(jobId);
   try {
-    updateJob(jobId, { status: 'running', progress: 'Connecting to phi4…' });
+    updateJob(jobId, { status: 'running' });
 
     const ollamaRes = await fetch('http://localhost:11434/api/generate', {
       method: 'POST',
@@ -74,11 +76,7 @@ async function runJob(jobId, ingredients, type) {
       signal: AbortSignal.timeout(360_000),
     });
 
-    if (!ollamaRes.ok) {
-      throw new Error(`Ollama returned HTTP ${ollamaRes.status}`);
-    }
-
-    updateJob(jobId, { progress: 'Generating…' });
+    if (!ollamaRes.ok) throw new Error(`Ollama returned HTTP ${ollamaRes.status}`);
 
     let accumulated = '';
     let done = false;
@@ -91,20 +89,22 @@ async function runJob(jobId, ingredients, type) {
       if (streamDone) break;
       lineBuffer += decoder.decode(value, { stream: true });
       const lines = lineBuffer.split('\n');
-      lineBuffer = lines.pop(); // keep partial last line
+      lineBuffer = lines.pop();
       for (const line of lines) {
         const trimmed = line.trim();
         if (!trimmed) continue;
         try {
           const chunk = JSON.parse(trimmed);
-          accumulated += chunk.response || '';
-          updateJob(jobId, { progress: `Generating… (${accumulated.length} chars)` });
+          const token = chunk.response || '';
+          if (token) {
+            accumulated += token;
+            job.tokens.push(token); // SSE stream reads this array in real time
+          }
           if (chunk.done) { done = true; break; }
         } catch (_) {}
       }
     }
 
-    // Parse the accumulated JSON response
     const recipe = JSON.parse(accumulated.trim());
     updateJob(jobId, { status: 'done', result: recipe });
   } catch (err) {
@@ -112,7 +112,7 @@ async function runJob(jobId, ingredients, type) {
   }
 }
 
-// POST /api/suggest-recipe — start async job
+// POST /api/suggest-recipe — start async job, return job_id immediately
 router.post('/', (req, res) => {
   const { ingredients, type } = req.body;
   if (!Array.isArray(ingredients) || ingredients.length === 0) {
@@ -120,15 +120,56 @@ router.post('/', (req, res) => {
   }
   const validType = type === 'cocktail' ? 'cocktail' : 'recipe';
   const jobId = newJob();
-  runJob(jobId, ingredients.map(String), validType); // fire and forget
+  runJob(jobId, ingredients.map(String), validType);
   res.json({ ok: true, job_id: jobId });
 });
 
-// GET /api/suggest-recipe/job/:id — poll status
-router.get('/job/:id', (req, res) => {
+// GET /api/suggest-recipe/stream/:id — SSE stream of tokens in real time
+// Sends { token } events as phi4 generates them, then { done, recipe } or { error }
+router.get('/stream/:id', (req, res) => {
   const job = _jobs.get(req.params.id);
   if (!job) return res.status(404).json({ error: 'job not found' });
-  res.json(job);
+
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('X-Accel-Buffering', 'no'); // disable nginx/proxy buffering
+  res.flushHeaders();
+
+  let cursor = 0;
+
+  function send(obj) {
+    res.write(`data: ${JSON.stringify(obj)}\n\n`);
+  }
+
+  function flush() {
+    // Drain any tokens we haven't sent yet
+    while (cursor < job.tokens.length) {
+      const token = job.tokens[cursor++];
+      if (token) send({ token });
+    }
+    if (job.status === 'done') {
+      send({ done: true, recipe: job.result });
+      res.end();
+      return true;
+    }
+    if (job.status === 'error') {
+      send({ error: job.error });
+      res.end();
+      return true;
+    }
+    return false;
+  }
+
+  // Check if job already finished before client connected
+  if (flush()) return;
+
+  // Poll tokens into SSE every 80ms (fast enough to feel real-time)
+  const intervalId = setInterval(() => {
+    if (flush()) clearInterval(intervalId);
+  }, 80);
+
+  req.on('close', () => clearInterval(intervalId));
 });
 
 module.exports = router;

@@ -6,20 +6,20 @@ import './SuggestRecipe.css';
 function sleep(ms) { return new Promise((r) => setTimeout(r, ms)); }
 
 function stepsToHtml(steps) {
-  const items = steps.map((s) => `<li><p>${s}</p></li>`).join('');
-  return `<ol>${items}</ol>`;
+  return `<ol>${steps.map((s) => `<li><p>${s}</p></li>`).join('')}</ol>`;
 }
 
 export default function SuggestRecipe() {
   const navigate = useNavigate();
   const [ingredients, setIngredients] = useState([]);
   const [draft, setDraft] = useState('');
-  const [state, setState] = useState('idle'); // idle | loading | done | error
-  const [progress, setProgress] = useState('');
+  const [state, setState] = useState('idle'); // idle | streaming | done | error
+  const [streamText, setStreamText] = useState('');
   const [recipe, setRecipe] = useState(null);
   const [error, setError] = useState(null);
   const [saving, setSaving] = useState(false);
-  const abortRef = useRef(false);
+  const abortCtrlRef = useRef(null);
+  const streamEndRef = useRef(null);
 
   function addIngredient(e) {
     e.preventDefault();
@@ -40,19 +40,24 @@ export default function SuggestRecipe() {
 
   async function suggest(type) {
     if (ingredients.length === 0) return;
-    abortRef.current = false;
-    setState('loading');
+
+    // Cancel any in-flight stream before starting a new one
+    abortCtrlRef.current?.abort();
+    const ctrl = new AbortController();
+    abortCtrlRef.current = ctrl;
+
+    setState('streaming');
+    setStreamText('');
     setError(null);
     setRecipe(null);
-    setProgress('Starting…');
 
     try {
-      // 3 retries on initial POST — mirrors investment dashboard pattern
+      // 3 retries on initial POST
       let jobData;
       for (let attempt = 0; attempt < 3; attempt++) {
         try {
           if (attempt > 0) {
-            setProgress(`Network error — retrying (${attempt}/2)…`);
+            setStreamText(`Network error — retrying (${attempt}/2)…`);
             await sleep(1500 * attempt);
           }
           jobData = await api.suggestRecipe(ingredients, type);
@@ -64,28 +69,56 @@ export default function SuggestRecipe() {
 
       if (!jobData.ok) throw new Error(jobData.error || 'Failed to start generation');
 
-      // Poll until done; on poll failure keep retrying (don't abort)
-      while (!abortRef.current) {
-        await sleep(1200);
-        let dp;
-        try {
-          dp = await api.getSuggestJob(jobData.job_id);
-        } catch (_) {
-          setProgress((prev) => prev + '\n[reconnecting…]');
-          continue;
-        }
-        if (dp.status === 'error') throw new Error(dp.error || 'AI generation failed');
-        if (dp.progress) setProgress(dp.progress);
-        if (dp.status === 'done') {
-          setRecipe(dp.result);
-          setState('done');
-          return;
+      // Open SSE stream — tokens arrive in real time as phi4 generates them
+      const response = await fetch(`/api/suggest-recipe/stream/${jobData.job_id}`, {
+        signal: ctrl.signal,
+      });
+      if (!response.ok) throw new Error(`Stream error: ${response.status}`);
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let sseBuffer = '';
+      let fullText = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        sseBuffer += decoder.decode(value, { stream: true });
+        const lines = sseBuffer.split('\n');
+        sseBuffer = lines.pop(); // keep incomplete last line
+
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          const dataStr = line.slice(6).trim();
+          if (!dataStr) continue;
+          const data = JSON.parse(dataStr);
+
+          if (data.token) {
+            fullText += data.token;
+            setStreamText(fullText);
+            // Auto-scroll to bottom as tokens arrive
+            streamEndRef.current?.scrollIntoView({ block: 'nearest' });
+          }
+          if (data.error) throw new Error(data.error);
+          if (data.done) {
+            setRecipe(data.recipe);
+            setState('done');
+            return;
+          }
         }
       }
     } catch (err) {
+      if (err.name === 'AbortError') return; // user clicked Stop — stay idle
       setError(err.message);
       setState('error');
     }
+  }
+
+  function handleStop() {
+    abortCtrlRef.current?.abort();
+    setState('idle');
+    setStreamText('');
+    setError(null);
   }
 
   async function save() {
@@ -119,11 +152,11 @@ export default function SuggestRecipe() {
   }
 
   function reset() {
-    abortRef.current = true;
+    abortCtrlRef.current?.abort();
     setState('idle');
     setRecipe(null);
+    setStreamText('');
     setError(null);
-    setProgress('');
   }
 
   return (
@@ -159,7 +192,7 @@ export default function SuggestRecipe() {
                   ? 'Add another ingredient…'
                   : 'Type an ingredient and press Enter…'
               }
-              disabled={state === 'loading'}
+              disabled={state === 'streaming'}
               style={{
                 border: 'none',
                 outline: 'none',
@@ -175,7 +208,7 @@ export default function SuggestRecipe() {
               type="button"
               className="btn-secondary"
               onClick={() => setIngredients([])}
-              disabled={state === 'loading'}
+              disabled={state === 'streaming'}
             >
               Clear
             </button>
@@ -185,14 +218,14 @@ export default function SuggestRecipe() {
         <div className="suggest-buttons">
           <button
             className="suggest-btn suggest-btn--food"
-            disabled={ingredients.length === 0 || state === 'loading'}
+            disabled={ingredients.length === 0 || state === 'streaming'}
             onClick={() => suggest('recipe')}
           >
             🍽️ Suggest Food Recipe
           </button>
           <button
             className="suggest-btn suggest-btn--cocktail"
-            disabled={ingredients.length === 0 || state === 'loading'}
+            disabled={ingredients.length === 0 || state === 'streaming'}
             onClick={() => suggest('cocktail')}
           >
             🍹 Suggest Cocktail
@@ -200,11 +233,23 @@ export default function SuggestRecipe() {
         </div>
       </div>
 
-      {state === 'loading' && (
-        <div className="suggest-loading">
-          <div className="suggest-spinner" />
-          <p className="suggest-progress-text">{progress}</p>
-          <p className="suggest-model-note">phi4:14b · running locally · 30–90 sec</p>
+      {state === 'streaming' && (
+        <div className="suggest-stream-box">
+          <div className="suggest-stream-header">
+            <div className="suggest-spinner" />
+            <span className="suggest-stream-label">phi4 is crafting your recipe…</span>
+            <button className="suggest-stop-btn" onClick={handleStop}>
+              ✕ Stop &amp; Try Another
+            </button>
+          </div>
+          {streamText && (
+            <pre className="suggest-stream-text">
+              {streamText}
+              <span className="suggest-cursor" />
+            </pre>
+          )}
+          <p className="suggest-model-note">phi4:14b · running locally on CPU · 1–5 min</p>
+          <div ref={streamEndRef} />
         </div>
       )}
 
