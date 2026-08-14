@@ -19,6 +19,7 @@ export default function SuggestRecipe() {
   const [error, setError] = useState(null);
   const [saving, setSaving] = useState(false);
   const abortCtrlRef = useRef(null);
+  const currentTypeRef = useRef(null);
   const streamEndRef = useRef(null);
 
   function addIngredient(e) {
@@ -45,6 +46,7 @@ export default function SuggestRecipe() {
     abortCtrlRef.current?.abort();
     const ctrl = new AbortController();
     abortCtrlRef.current = ctrl;
+    currentTypeRef.current = type;
 
     setState('streaming');
     setStreamText('');
@@ -115,10 +117,7 @@ export default function SuggestRecipe() {
   }
 
   function handleStop() {
-    abortCtrlRef.current?.abort();
-    setState('idle');
-    setStreamText('');
-    setError(null);
+    suggest(currentTypeRef.current); // cancels current stream and fires a new one
   }
 
   async function save() {
@@ -239,7 +238,7 @@ export default function SuggestRecipe() {
             <div className="suggest-spinner" />
             <span className="suggest-stream-label">phi4 is crafting your recipe…</span>
             <button className="suggest-stop-btn" onClick={handleStop}>
-              ✕ Stop &amp; Try Another
+              🔄 Try Another
             </button>
           </div>
           {streamText && (
