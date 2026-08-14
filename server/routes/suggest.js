@@ -2,6 +2,9 @@ const express = require('express');
 
 const router = express.Router();
 
+const ALLOWED_MODELS = ['phi4:14b', 'qwen2.5:7b'];
+const NUM_PREDICT = { 'phi4:14b': 1500, 'qwen2.5:7b': 1000 };
+
 // In-memory job store; entries expire after 15 minutes
 const _jobs = new Map();
 setInterval(() => {
@@ -13,7 +16,6 @@ setInterval(() => {
 
 function newJob() {
   const id = Math.random().toString(36).slice(2, 18);
-  // tokens[] is appended by runJob; SSE stream reads from it in real time
   _jobs.set(id, { status: 'pending', tokens: [], ts: Date.now() });
   return id;
 }
@@ -23,12 +25,25 @@ function updateJob(id, patch) {
   if (job) Object.assign(job, patch, { ts: Date.now() });
 }
 
-function buildPrompt(ingredients, type) {
+function safeModel(m) {
+  return ALLOWED_MODELS.includes(m) ? m : 'phi4:14b';
+}
+
+function buildPrompt(ingredients, type, cookTime, concept) {
   const label = type === 'cocktail' ? 'cocktail' : 'food recipe';
   const subcategoryNote = type === 'cocktail'
     ? 'Set subcategory to empty string "".'
     : 'Set subcategory to one of: breakfast, lunch, dinner, dessert.';
-  return `You are a culinary expert. Create a ${label} using some or all of these ingredients: ${ingredients.join(', ')}.
+
+  const conceptIntro = concept
+    ? `Create a ${label} called "${concept.title}" — ${concept.tagline} — using`
+    : `Create a ${label} using some or all of`;
+
+  const cookTimeNote = cookTime
+    ? `\nTarget total cook + prep time: ${cookTime}. Adjust the recipe complexity accordingly.`
+    : '';
+
+  return `You are a culinary expert. ${conceptIntro} these ingredients: ${ingredients.join(', ')}.${cookTimeNote}
 
 You may supplement with common pantry staples (salt, pepper, oil, butter, water, vinegar, sugar, flour, etc.).
 
@@ -58,8 +73,9 @@ ${subcategoryNote}
 Write clear, detailed instructions. Do not truncate — complete the full recipe.`;
 }
 
-async function runJob(jobId, ingredients, type) {
+async function runJob(jobId, ingredients, type, cookTime, model, concept) {
   const job = _jobs.get(jobId);
+  const m = safeModel(model);
   try {
     updateJob(jobId, { status: 'running' });
 
@@ -67,11 +83,11 @@ async function runJob(jobId, ingredients, type) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'phi4:14b',
-        prompt: buildPrompt(ingredients, type),
+        model: m,
+        prompt: buildPrompt(ingredients, type, cookTime, concept),
         stream: true,
         format: 'json',
-        options: { temperature: 0.45, num_predict: 1500 },
+        options: { temperature: 0.45, num_predict: NUM_PREDICT[m] || 1500 },
       }),
       signal: AbortSignal.timeout(360_000),
     });
@@ -98,7 +114,7 @@ async function runJob(jobId, ingredients, type) {
           const token = chunk.response || '';
           if (token) {
             accumulated += token;
-            job.tokens.push(token); // SSE stream reads this array in real time
+            job.tokens.push(token);
           }
           if (chunk.done) { done = true; break; }
         } catch (_) {}
@@ -112,20 +128,19 @@ async function runJob(jobId, ingredients, type) {
   }
 }
 
-// POST /api/suggest-recipe — start async job, return job_id immediately
+// POST /api/suggest-recipe — start async SSE job
 router.post('/', (req, res) => {
-  const { ingredients, type } = req.body;
+  const { ingredients, type, model, cookTime, concept } = req.body;
   if (!Array.isArray(ingredients) || ingredients.length === 0) {
     return res.status(400).json({ error: 'ingredients array required' });
   }
   const validType = type === 'cocktail' ? 'cocktail' : 'recipe';
   const jobId = newJob();
-  runJob(jobId, ingredients.map(String), validType);
+  runJob(jobId, ingredients.map(String), validType, cookTime || '', model || 'phi4:14b', concept || null);
   res.json({ ok: true, job_id: jobId });
 });
 
 // GET /api/suggest-recipe/stream/:id — SSE stream of tokens in real time
-// Sends { token } events as phi4 generates them, then { done, recipe } or { error }
 router.get('/stream/:id', (req, res) => {
   const job = _jobs.get(req.params.id);
   if (!job) return res.status(404).json({ error: 'job not found' });
@@ -133,43 +148,81 @@ router.get('/stream/:id', (req, res) => {
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
-  res.setHeader('X-Accel-Buffering', 'no'); // disable nginx/proxy buffering
+  res.setHeader('X-Accel-Buffering', 'no');
   res.flushHeaders();
 
   let cursor = 0;
 
-  function send(obj) {
-    res.write(`data: ${JSON.stringify(obj)}\n\n`);
-  }
+  function send(obj) { res.write(`data: ${JSON.stringify(obj)}\n\n`); }
 
   function flush() {
-    // Drain any tokens we haven't sent yet
     while (cursor < job.tokens.length) {
       const token = job.tokens[cursor++];
       if (token) send({ token });
     }
-    if (job.status === 'done') {
-      send({ done: true, recipe: job.result });
-      res.end();
-      return true;
-    }
-    if (job.status === 'error') {
-      send({ error: job.error });
-      res.end();
-      return true;
-    }
+    if (job.status === 'done') { send({ done: true, recipe: job.result }); res.end(); return true; }
+    if (job.status === 'error') { send({ error: job.error }); res.end(); return true; }
     return false;
   }
 
-  // Check if job already finished before client connected
   if (flush()) return;
-
-  // Poll tokens into SSE every 80ms (fast enough to feel real-time)
-  const intervalId = setInterval(() => {
-    if (flush()) clearInterval(intervalId);
-  }, 80);
-
+  const intervalId = setInterval(() => { if (flush()) clearInterval(intervalId); }, 80);
   req.on('close', () => clearInterval(intervalId));
+});
+
+// POST /api/suggest-recipe/concepts — fast synchronous concept generation (no job store)
+router.post('/concepts', async (req, res) => {
+  const { ingredients, type, model: reqModel, cookTime } = req.body;
+  if (!Array.isArray(ingredients) || ingredients.length === 0) {
+    return res.status(400).json({ error: 'ingredients required' });
+  }
+
+  const m = safeModel(reqModel);
+  const label = type === 'cocktail' ? 'cocktail' : 'food recipe';
+  const cookTimeNote = cookTime ? `Preference: ${cookTime} total time.\n` : '';
+
+  const prompt = `You are a culinary expert. Suggest 3 distinct ${label} concepts using some of these ingredients: ${ingredients.join(', ')}.
+${cookTimeNote}
+Return ONLY a JSON array of exactly 3 objects — no text outside:
+[
+  {"title": "Recipe Name", "tagline": "One enticing sentence describing the dish."},
+  {"title": "Recipe Name 2", "tagline": "One enticing sentence."},
+  {"title": "Recipe Name 3", "tagline": "One enticing sentence."}
+]
+Make the 3 concepts meaningfully different from each other in style, technique, or flavor profile.`;
+
+  try {
+    const ollamaRes = await fetch('http://localhost:11434/api/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: m,
+        prompt,
+        stream: false,
+        format: 'json',
+        options: { temperature: 0.65, num_predict: 350 },
+      }),
+      signal: AbortSignal.timeout(90_000),
+    });
+
+    if (!ollamaRes.ok) throw new Error(`Ollama returned HTTP ${ollamaRes.status}`);
+
+    const json = await ollamaRes.json();
+    const text = (json.response || '').trim();
+
+    let concepts;
+    try { concepts = JSON.parse(text); }
+    catch {
+      const m2 = text.match(/\[[\s\S]*\]/);
+      if (m2) concepts = JSON.parse(m2[0]);
+      else throw new Error('Model response was not valid JSON');
+    }
+
+    if (!Array.isArray(concepts)) throw new Error('Expected JSON array of concepts');
+    res.json({ concepts: concepts.slice(0, 3) });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 module.exports = router;

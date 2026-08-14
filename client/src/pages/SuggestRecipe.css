@@ -12,6 +12,89 @@
   margin-bottom: 2rem;
 }
 
+/* Options (model + cook time) */
+.suggest-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-bottom: 1.25rem;
+  padding: 0.9rem 1.1rem;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.suggest-option-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.suggest-option-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  min-width: 60px;
+}
+
+/* Model toggle — segmented control */
+.model-toggle {
+  display: flex;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.model-toggle-btn {
+  padding: 0.35rem 1rem;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  background: var(--surface);
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+.model-toggle-btn + .model-toggle-btn {
+  border-left: 1.5px solid var(--border);
+}
+.model-toggle-btn.active {
+  background: var(--accent);
+  color: #fff;
+  font-weight: 600;
+}
+.model-toggle-btn:not(.active):hover { background: var(--surface2); color: var(--text); }
+.model-toggle-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.model-toggle-sub {
+  font-size: 0.68rem;
+  opacity: 0.75;
+  font-family: 'Courier New', monospace;
+}
+
+.model-toggle-note {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  opacity: 0.65;
+}
+
+/* Cook time chips — small, reuse .filter-tab */
+.cooktime-tabs {
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+.cooktime-tabs .filter-tab {
+  font-size: 0.78rem;
+  padding: 0.3rem 0.8rem;
+}
+
 .suggest-buttons {
   display: flex;
   gap: 0.75rem;
@@ -53,6 +136,83 @@
   opacity: 0.45;
   cursor: not-allowed;
 }
+
+/* Concept picker */
+.suggest-concepts {
+  margin-top: 0.5rem;
+}
+
+.concepts-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.concepts-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.concept-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  margin-bottom: 1rem;
+}
+
+.concept-card {
+  width: 100%;
+  text-align: left;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem 1.25rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  box-shadow: var(--shadow);
+}
+.concept-card:hover {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-light);
+  transform: translateY(-1px);
+}
+
+.concept-card-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 0.3rem;
+  font-family: 'Playfair Display', serif;
+}
+
+.concept-card-tagline {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.concept-card-arrow {
+  font-size: 0.75rem;
+  color: var(--accent);
+  font-weight: 600;
+  margin-top: 0.5rem;
+}
+
+.btn-link {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  cursor: pointer;
+  padding: 0.25rem 0;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.btn-link:hover { color: var(--text); }
 
 /* Streaming panel */
 .suggest-stream-box {
@@ -267,8 +427,12 @@
 }
 
 @media (max-width: 600px) {
+  .suggest-options { padding: 0.75rem; }
+  .suggest-option-row { gap: 0.5rem; }
+  .suggest-option-label { min-width: 50px; font-size: 0.68rem; }
   .suggest-buttons { flex-direction: column; }
   .suggest-btn { min-width: 0; }
   .suggest-result { padding: 1.25rem; }
   .suggest-result-actions { flex-direction: column; }
+  .concepts-header { flex-direction: column; align-items: flex-start; }
 }
