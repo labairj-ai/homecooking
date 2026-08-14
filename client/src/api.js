@@ -9,8 +9,16 @@ async function json(res) {
 }
 
 export const api = {
-  listRecipes: (type) =>
-    fetch(type ? `${BASE}/recipes?type=${type}` : `${BASE}/recipes`).then(json),
+  listRecipes: (type, trial = false) => {
+    const params = new URLSearchParams();
+    if (type) params.set('type', type);
+    if (trial) params.set('trial', '1');
+    const qs = params.toString();
+    return fetch(`${BASE}/recipes${qs ? `?${qs}` : ''}`).then(json);
+  },
+
+  promoteRecipe: (id) =>
+    fetch(`${BASE}/recipes/${id}/promote`, { method: 'PATCH' }).then(json),
 
   searchRecipes: (q) =>
     fetch(`${BASE}/recipes/search?q=${encodeURIComponent(q)}`).then(json),

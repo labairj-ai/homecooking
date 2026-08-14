@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import { api } from '../api';
 import RecipeCard from '../components/RecipeCard';
 import './Home.css';
@@ -19,6 +20,7 @@ const SUBCATEGORIES = [
 
 export default function Home() {
   const [recipes, setRecipes] = useState([]);
+  const [trialCount, setTrialCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('');
   const [subFilter, setSubFilter] = useState('');
@@ -30,11 +32,14 @@ export default function Home() {
     setLoading(true);
     setError(null);
     try {
-      const data =
+      const [data, trials] = await Promise.all([
         searchTerms.length > 0
-          ? await api.searchRecipes(searchTerms.join(','))
-          : await api.listRecipes(filter);
+          ? api.searchRecipes(searchTerms.join(','))
+          : api.listRecipes(filter),
+        api.listRecipes('', true),
+      ]);
       setRecipes(data);
+      setTrialCount(trials.length);
     } catch (e) {
       setError(e.message);
     } finally {
@@ -84,6 +89,12 @@ export default function Home() {
         <h1>My Kitchen</h1>
         <p className="home-subtitle">Recipes &amp; cocktails</p>
       </div>
+
+      {trialCount > 0 && (
+        <Link to="/tryit" className="tryit-banner">
+          🧪 {trialCount} recipe{trialCount !== 1 ? 's' : ''} in your Try It queue →
+        </Link>
+      )}
 
       <div className="search-bar">
         <div className="search-input-wrap">

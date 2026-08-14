@@ -16,12 +16,13 @@ function attachRelated(recipe) {
   return recipe;
 }
 
-// GET /api/recipes  (optional ?type=recipe|cocktail)
+// GET /api/recipes  (optional ?type=recipe|cocktail, ?trial=1 for try-it queue)
 router.get('/', (req, res) => {
-  const { type } = req.query;
+  const { type, trial } = req.query;
+  const isTrial = trial === '1' ? 1 : 0;
   const rows = type
-    ? db.prepare('SELECT * FROM recipes WHERE type = ? ORDER BY title COLLATE NOCASE').all(type)
-    : db.prepare('SELECT * FROM recipes ORDER BY title COLLATE NOCASE').all();
+    ? db.prepare('SELECT * FROM recipes WHERE type = ? AND is_trial = ? ORDER BY title COLLATE NOCASE').all(type, isTrial)
+    : db.prepare('SELECT * FROM recipes WHERE is_trial = ? ORDER BY title COLLATE NOCASE').all(isTrial);
   res.json(rows.map(attachRelated));
 });
 
@@ -44,7 +45,7 @@ router.get('/search', (req, res) => {
     .prepare(
       `SELECT DISTINCT r.* FROM recipes r
        JOIN ingredients i ON i.recipe_id = r.id
-       WHERE ${placeholders}
+       WHERE r.is_trial = 0 AND ${placeholders}
        ORDER BY r.title COLLATE NOCASE`
     )
     .all(...params);
@@ -74,17 +75,17 @@ function clampFocal(val, fallback = 50) {
 
 // POST /api/recipes
 router.post('/', (req, res) => {
-  const { title, type, subcategory, description, instructions, notes, image_path, is_favorite = 0, focal_x = 50, focal_y = 50, ingredients = [], tags = [] } = req.body;
+  const { title, type, subcategory, description, instructions, notes, image_path, is_favorite = 0, focal_x = 50, focal_y = 50, is_trial = 0, ingredients = [], tags = [] } = req.body;
 
   if (!title || !type) return res.status(400).json({ error: 'title and type are required' });
 
   const insert = db.transaction(() => {
     const { lastInsertRowid } = db
       .prepare(
-        `INSERT INTO recipes (title, type, subcategory, description, instructions, notes, image_path, is_favorite, focal_x, focal_y)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        `INSERT INTO recipes (title, type, subcategory, description, instructions, notes, image_path, is_favorite, focal_x, focal_y, is_trial)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
       )
-      .run(title, type, subcategory || null, description || null, instructions || null, notes || null, image_path || null, is_favorite ? 1 : 0, clampFocal(focal_x), clampFocal(focal_y));
+      .run(title, type, subcategory || null, description || null, instructions || null, notes || null, image_path || null, is_favorite ? 1 : 0, clampFocal(focal_x), clampFocal(focal_y), is_trial ? 1 : 0);
 
     const id = lastInsertRowid;
 
@@ -153,6 +154,14 @@ router.put('/:id', (req, res) => {
   update();
   const recipe = db.prepare('SELECT * FROM recipes WHERE id = ?').get(id);
   res.json(attachRelated(recipe));
+});
+
+// PATCH /api/recipes/:id/promote — move from Try It queue to My Kitchen
+router.patch('/:id/promote', (req, res) => {
+  const recipe = db.prepare('SELECT * FROM recipes WHERE id = ?').get(req.params.id);
+  if (!recipe) return res.status(404).json({ error: 'Not found' });
+  db.prepare(`UPDATE recipes SET is_trial = 0, updated_at = datetime('now') WHERE id = ?`).run(req.params.id);
+  res.json({ id: recipe.id, is_trial: 0 });
 });
 
 // DELETE /api/recipes/:id

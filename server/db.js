@@ -100,4 +100,9 @@ if (userVersion < 4) {
   db.pragma('user_version = 4');
 }
 
+if (userVersion < 5) {
+  db.exec(`ALTER TABLE recipes ADD COLUMN is_trial INTEGER NOT NULL DEFAULT 0`);
+  db.pragma('user_version = 5');
+}
+
 module.exports = db;

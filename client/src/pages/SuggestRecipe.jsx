@@ -38,7 +38,7 @@ export default function SuggestRecipe() {
   const [streamText, setStreamText] = useState('');
   const [recipe, setRecipe] = useState(null);
   const [error, setError] = useState(null);
-  const [saving, setSaving] = useState(false);
+  const [saving, setSaving] = useState(null);
 
   const abortCtrlRef = useRef(null);
   const currentTypeRef = useRef(null);
@@ -167,9 +167,9 @@ export default function SuggestRecipe() {
     setState('concepts');
   }
 
-  async function save() {
+  async function save(asTrial = false) {
     if (!recipe) return;
-    setSaving(true);
+    setSaving(asTrial ? 'trial' : 'kitchen');
     setError(null);
     try {
       const saved = await api.createRecipe({
@@ -189,11 +189,12 @@ export default function SuggestRecipe() {
           order_idx: i,
         })),
         tags: [],
+        is_trial: asTrial ? 1 : 0,
       });
-      navigate(`/recipe/${saved.id}`);
+      navigate(asTrial ? '/tryit' : `/recipe/${saved.id}`);
     } catch (err) {
       setError(err.message);
-      setSaving(false);
+      setSaving(null);
     }
   }
 
@@ -207,6 +208,7 @@ export default function SuggestRecipe() {
   }
 
   const busy = state === 'concepts-loading' || state === 'streaming';
+  const isSaving = saving !== null;
   const typeLabel = currentTypeRef.current === 'cocktail' ? 'cocktail' : 'food recipe';
 
   return (
@@ -410,13 +412,16 @@ export default function SuggestRecipe() {
           )}
 
           <div className="suggest-result-actions">
-            <button className="btn-primary" onClick={save} disabled={saving}>
-              {saving ? 'Saving…' : '✓ Save to My Kitchen'}
+            <button className="btn-primary" onClick={() => save(false)} disabled={isSaving}>
+              {saving === 'kitchen' ? 'Saving…' : '✓ Save to My Kitchen'}
             </button>
-            <button className="btn-secondary" onClick={() => setState('concepts')}>
+            <button className="btn-secondary" onClick={() => save(true)} disabled={isSaving}>
+              {saving === 'trial' ? 'Saving…' : '🧪 Save to Try It'}
+            </button>
+            <button className="btn-secondary" onClick={() => setState('concepts')} disabled={isSaving}>
               ← Back to concepts
             </button>
-            <button className="btn-link" onClick={reset}>Start over</button>
+            <button className="btn-link" onClick={reset} disabled={isSaving}>Start over</button>
           </div>
           {error && <p className="suggest-inline-error">⚠ {error}</p>}
         </div>

@@ -13,6 +13,7 @@ export default function RecipeDetail() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [deleting, setDeleting] = useState(false);
+  const [promoting, setPromoting] = useState(false);
   const [cookMode, setCookMode] = useState(false);
   const [addedToList, setAddedToList] = useState(false);
   const [shared, setShared] = useState(false);
@@ -60,12 +61,23 @@ export default function RecipeDetail() {
     setTimeout(() => setShared(false), 2500);
   }
 
+  async function handlePromote() {
+    setPromoting(true);
+    try {
+      await api.promoteRecipe(id);
+      navigate('/');
+    } catch (e) {
+      alert('Failed to move to kitchen: ' + e.message);
+      setPromoting(false);
+    }
+  }
+
   async function handleDelete() {
     if (!confirm('Delete this recipe? This cannot be undone.')) return;
     setDeleting(true);
     try {
       await api.deleteRecipe(id);
-      navigate('/');
+      navigate(recipe?.is_trial ? '/tryit' : '/');
     } catch (e) {
       alert('Delete failed: ' + e.message);
       setDeleting(false);
@@ -91,6 +103,7 @@ export default function RecipeDetail() {
       <div className="detail-content">
         <div className="detail-top">
           <div className="detail-meta">
+            {recipe.is_trial ? <span className="trial-badge">🧪 Try It</span> : null}
             <TypeBadge type={recipe.type} />
             {recipe.subcategory && (
               <span className="subcategory-badge">{recipe.subcategory}</span>
@@ -100,6 +113,16 @@ export default function RecipeDetail() {
             ))}
           </div>
           <div className="detail-actions">
+            {recipe.is_trial ? (
+              <button
+                className="btn-promote"
+                onClick={handlePromote}
+                disabled={promoting || deleting}
+                style={{ padding: '0.45rem 1.1rem', borderRadius: 8, border: '1.5px solid var(--accent)', background: 'var(--accent)', color: '#fff', fontSize: '0.875rem', fontWeight: 600, cursor: 'pointer' }}
+              >
+                {promoting ? 'Moving…' : '✓ Move to Kitchen'}
+              </button>
+            ) : null}
             {recipe.type === 'drink' && (
               <button
                 type="button"
@@ -194,7 +217,9 @@ export default function RecipeDetail() {
           </section>
         )}
 
-        <Link to="/" className="back-link">← Back to all recipes</Link>
+        <Link to={recipe.is_trial ? '/tryit' : '/'} className="back-link">
+          {recipe.is_trial ? '← Back to Try It queue' : '← Back to all recipes'}
+        </Link>
       </div>
       {cookMode && (
         <CookMode
