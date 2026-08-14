@@ -74,6 +74,9 @@ export const api = {
   clearGrocery: (all = false) =>
     fetch(`${BASE}/grocery${all ? '?all=true' : ''}`, { method: 'DELETE' }).then(json),
 
+  parseRecipeJob: (jobId) =>
+    fetch(`${BASE}/parse-recipe/job/${jobId}`).then(json),
+
   suggestRecipe: (ingredients, type) =>
     fetch(`${BASE}/suggest-recipe`, {
       method: 'POST',

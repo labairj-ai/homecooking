@@ -3,8 +3,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
-const { createWorker } = require('tesseract.js');
-const pdfParse = require('pdf-parse/lib/pdf-parse');
+const pdfParse = require('pdf-parse');
 
 const router = express.Router();
 
@@ -18,15 +17,34 @@ const storage = multer.diskStorage({
   },
 });
 
+const IMAGE_MIMES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif']);
+
 const upload = multer({
   storage,
   limits: { fileSize: 20 * 1024 * 1024 },
   fileFilter: (_req, file, cb) =>
-    cb(null, /jpeg|jpg|png|gif|webp|avif|pdf/.test(file.mimetype.replace('application/', ''))),
+    cb(null, file.mimetype === 'application/pdf' || IMAGE_MIMES.has(file.mimetype)),
 });
 
-const OLLAMA_URL = 'http://127.0.0.1:11434';
-const OLLAMA_MODEL = process.env.OLLAMA_MODEL || 'llama3.2-vision';
+// --- Async job store for image parsing (minicpm-v can take ~30-60s) ---
+const _jobs = new Map();
+setInterval(() => {
+  const cutoff = Date.now() - 15 * 60 * 1000;
+  for (const [id, job] of _jobs) {
+    if (job.ts < cutoff) _jobs.delete(id);
+  }
+}, 60 * 1000);
+
+function newJob(filename) {
+  const id = Math.random().toString(36).slice(2, 18);
+  _jobs.set(id, { status: 'pending', progress: 'Starting…', filename, ts: Date.now() });
+  return id;
+}
+
+function updateJob(id, patch) {
+  const job = _jobs.get(id);
+  if (job) Object.assign(job, patch, { ts: Date.now() });
+}
 
 const VISION_PROMPT = `You are a recipe parser. Look at this image and extract the recipe.
 
@@ -46,7 +64,50 @@ Rules:
 - instructions is an array of plain-text step strings
 - Use "" for any field you cannot determine from the image`;
 
-// Section header patterns (for tesseract text parsing)
+async function runParseJob(jobId, filePath) {
+  try {
+    updateJob(jobId, { status: 'running', progress: 'Reading image…' });
+    const imageData = fs.readFileSync(filePath).toString('base64');
+
+    updateJob(jobId, { progress: 'Sending to minicpm-v…' });
+    const res = await fetch('http://localhost:11434/api/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'minicpm-v',
+        prompt: VISION_PROMPT,
+        images: [imageData],
+        stream: false,
+        format: 'json',
+        options: { temperature: 0.2, num_predict: 1500 },
+      }),
+      signal: AbortSignal.timeout(120_000),
+    });
+
+    if (!res.ok) throw new Error(`Ollama returned HTTP ${res.status}`);
+
+    updateJob(jobId, { progress: 'Extracting recipe…' });
+    const json = await res.json();
+    const text = (json.response || '').trim();
+
+    let recipe;
+    try {
+      recipe = JSON.parse(text);
+    } catch {
+      const m = text.match(/\{[\s\S]*\}/);
+      if (m) recipe = JSON.parse(m[0]);
+      else throw new Error('Model response was not valid JSON');
+    }
+
+    updateJob(jobId, { status: 'done', result: recipe });
+  } catch (err) {
+    // Delete the uploaded file on error — user will need to re-upload
+    try { fs.unlinkSync(filePath); } catch (_) {}
+    updateJob(jobId, { status: 'error', error: err.message, filename: null });
+  }
+}
+
+// --- PDF heuristic text parsing (synchronous, no LLM needed) ---
 const SECTION_RE = {
   ingredients:  /^(ingredients?|what you.{0,5}ll need)\s*:?\s*$/i,
   instructions: /^(instructions?|directions?|method|steps?|how to( make)?|preparation|prep)\s*:?\s*$/i,
@@ -96,75 +157,38 @@ function parseText(raw) {
   return { title: headerLines[0] || '', type: 'recipe', description: headerLines.slice(1, 3).join(' '), ingredients, instructions, notes };
 }
 
-async function parseWithOllama(filePath) {
-  const imageData = fs.readFileSync(filePath).toString('base64');
-  const res = await fetch(`${OLLAMA_URL}/api/generate`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      model: OLLAMA_MODEL,
-      prompt: VISION_PROMPT,
-      images: [imageData],
-      stream: false,
-    }),
-    signal: AbortSignal.timeout(120000),
-  });
-  if (!res.ok) throw new Error(`Ollama HTTP ${res.status}`);
-  const json = await res.json();
-  const text = (json.response || '').trim();
-  try { return JSON.parse(text); } catch {
-    const m = text.match(/\{[\s\S]*\}/);
-    if (m) return JSON.parse(m[0]);
-    throw new Error('Could not parse Ollama response as JSON');
-  }
-}
-
-async function ollamaAvailable() {
-  try {
-    const res = await fetch(`${OLLAMA_URL}/api/tags`, { signal: AbortSignal.timeout(2000) });
-    if (!res.ok) return false;
-    const json = await res.json();
-    return json.models?.some(m => m.name.startsWith(OLLAMA_MODEL.split(':')[0]));
-  } catch { return false; }
-}
-
-async function parseWithTesseract(filePath) {
-  const worker = await createWorker('eng', 1, {
-    cachePath: path.join(__dirname, '..', '..', '.tesseract-cache'),
-    logger: () => {},
-  });
-  try {
-    const { data: { text } } = await worker.recognize(filePath);
-    return parseText(text);
-  } finally {
-    await worker.terminate();
-  }
-}
-
 // POST /api/parse-recipe  (multipart/form-data, field: image)
+// PDF  → synchronous heuristic parse, returns { filename: null, recipe } immediately
+// Image → starts async minicpm-v job, returns { ok: true, job_id }
 router.post('/', upload.single('image'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
 
   const filePath = path.join(UPLOADS_DIR, req.file.filename);
-  const isPdf = req.file.mimetype === 'application/pdf';
 
-  try {
-    let recipe;
-
-    if (isPdf) {
+  if (req.file.mimetype === 'application/pdf') {
+    try {
       const buffer = fs.readFileSync(filePath);
       const data = await pdfParse(buffer);
-      recipe = parseText(data.text);
-    } else if (await ollamaAvailable()) {
-      recipe = await parseWithOllama(filePath);
-    } else {
-      recipe = await parseWithTesseract(filePath);
+      fs.unlink(filePath, () => {}); // clean up PDF after parsing
+      res.json({ filename: null, recipe: parseText(data.text) });
+    } catch (err) {
+      fs.unlink(filePath, () => {});
+      res.status(500).json({ error: err.message });
     }
-
-    res.json({ filename: isPdf ? null : req.file.filename, recipe });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
+    return;
   }
+
+  // Image file — kick off async Ollama job
+  const jobId = newJob(req.file.filename);
+  runParseJob(jobId, filePath); // fire and forget
+  res.json({ ok: true, job_id: jobId });
+});
+
+// GET /api/parse-recipe/job/:id — poll image parse job status
+router.get('/job/:id', (req, res) => {
+  const job = _jobs.get(req.params.id);
+  if (!job) return res.status(404).json({ error: 'job not found' });
+  res.json(job);
 });
 
 module.exports = router;

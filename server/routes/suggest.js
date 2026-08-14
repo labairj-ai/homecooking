@@ -69,9 +69,9 @@ async function runJob(jobId, ingredients, type) {
         prompt: buildPrompt(ingredients, type),
         stream: true,
         format: 'json',
-        options: { temperature: 0.45, num_predict: 2000 },
+        options: { temperature: 0.45, num_predict: 1500 },
       }),
-      signal: AbortSignal.timeout(180_000),
+      signal: AbortSignal.timeout(360_000),
     });
 
     if (!ollamaRes.ok) {

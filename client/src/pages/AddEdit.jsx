@@ -106,6 +106,7 @@ export default function AddEdit() {
   const [parsing, setParsing] = useState(false);
   const [fetching, setFetching] = useState(false);
   const [parseError, setParseError] = useState(null);
+  const [parseProgress, setParseProgress] = useState('');
   const [urlDraft, setUrlDraft] = useState('');
   const fileRef = useRef();
   const pdfFileRef = useRef();
@@ -250,13 +251,55 @@ export default function AddEdit() {
     if (!file) return;
     setParsing(true);
     setParseError(null);
+    setParseProgress('');
+
     try {
-      const result = await api.parseRecipe(file);
-      applyParsedRecipe(result);
+      // 3 retries on initial POST — mirrors invest dashboard resilience pattern
+      let result;
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          if (attempt > 0) {
+            setParseProgress(`Network error — retrying (${attempt}/2)…`);
+            await new Promise((r) => setTimeout(r, 1500 * attempt));
+          }
+          result = await api.parseRecipe(file);
+          break;
+        } catch (_) {
+          if (attempt === 2) throw new Error('Server unreachable after 3 attempts');
+        }
+      }
+
+      // PDF returns recipe immediately (synchronous heuristic parse)
+      if (result.recipe) {
+        applyParsedRecipe({ filename: result.filename, recipe: result.recipe });
+        return;
+      }
+
+      // Image: poll job until done; reconnect on poll failures
+      if (!result.ok || !result.job_id) throw new Error(result.error || 'Parse failed');
+      setParseProgress('Analyzing image with minicpm-v…');
+
+      while (true) {
+        await new Promise((r) => setTimeout(r, 1200));
+        let dp;
+        try {
+          dp = await api.parseRecipeJob(result.job_id);
+        } catch (_) {
+          setParseProgress('[reconnecting…]');
+          continue;
+        }
+        if (dp.status === 'error') throw new Error(dp.error || 'Image parsing failed');
+        if (dp.progress) setParseProgress(dp.progress);
+        if (dp.status === 'done') {
+          applyParsedRecipe({ filename: dp.filename, recipe: dp.result });
+          return;
+        }
+      }
     } catch (err) {
       setParseError(err.message);
     } finally {
       setParsing(false);
+      setParseProgress('');
       if (pdfFileRef.current) pdfFileRef.current.value = '';
     }
   }
@@ -320,19 +363,20 @@ export default function AddEdit() {
             </div>
             <div className="parse-or">
               <label htmlFor="parse-file" className={`btn-parse-secondary${parsing ? ' btn-parse--loading' : ''}`}>
-                {parsing ? '⏳ Parsing…' : '📄 Import PDF'}
+                {parsing ? '⏳ Parsing…' : '📷 Import Photo or PDF'}
               </label>
-              <span className="parse-hint">Upload a PDF recipe to extract text</span>
+              <span className="parse-hint">Upload a recipe photo (JPG/PNG) or PDF to extract text</span>
             </div>
             <input
               id="parse-file"
               type="file"
-              accept=".pdf,application/pdf"
+              accept=".pdf,application/pdf,image/jpeg,image/png,image/webp,image/gif,image/avif"
               ref={pdfFileRef}
               onChange={handleParsePdf}
               style={{ display: 'none' }}
               disabled={parsing || fetching}
             />
+            {parseProgress && <p className="parse-progress">{parseProgress}</p>}
             {parseError && <p className="parse-error">Error: {parseError}</p>}
           </div>
         )}
