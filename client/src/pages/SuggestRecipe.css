@@ -1,0 +1,220 @@
+.suggest {
+  max-width: 760px;
+}
+
+.suggest-header {
+  margin-bottom: 1.75rem;
+}
+.suggest-header h1 { font-size: 2.2rem; color: var(--text); }
+.suggest-subtitle { color: var(--text-muted); margin-top: 0.3rem; font-size: 1rem; }
+
+.suggest-input-section {
+  margin-bottom: 2rem;
+}
+
+.suggest-buttons {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  flex-wrap: wrap;
+}
+
+.suggest-btn {
+  flex: 1;
+  min-width: 180px;
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--radius);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  border: 2px solid transparent;
+}
+
+.suggest-btn--food {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+.suggest-btn--food:hover:not(:disabled) {
+  filter: brightness(0.92);
+}
+
+.suggest-btn--cocktail {
+  background: var(--surface);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+.suggest-btn--cocktail:hover:not(:disabled) {
+  background: var(--accent-light);
+}
+
+.suggest-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* Loading */
+.suggest-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 3rem 0;
+}
+
+.suggest-spinner {
+  width: 44px;
+  height: 44px;
+  border: 4px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: suggest-spin 0.9s linear infinite;
+}
+@keyframes suggest-spin { to { transform: rotate(360deg); } }
+
+.suggest-progress-text {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  white-space: pre-wrap;
+  text-align: center;
+  max-width: 400px;
+}
+
+.suggest-model-note {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  opacity: 0.65;
+}
+
+/* Error */
+.suggest-error-box {
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  text-align: center;
+  color: var(--text);
+  margin-top: 1.5rem;
+}
+.suggest-error-box p {
+  color: #c0392b;
+  margin-bottom: 1rem;
+}
+
+/* Result */
+.suggest-result {
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.75rem;
+  box-shadow: var(--shadow);
+  margin-top: 0.5rem;
+}
+
+.suggest-result-header {
+  margin-bottom: 1.5rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.suggest-result-title {
+  font-size: 1.6rem;
+  color: var(--text);
+  margin-bottom: 0.5rem;
+  font-family: 'Playfair Display', serif;
+}
+
+.suggest-result-desc {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  line-height: 1.55;
+  margin-bottom: 0.75rem;
+}
+
+.suggest-result-meta {
+  display: flex;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.suggest-section {
+  margin-bottom: 1.5rem;
+}
+.suggest-section h3 {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 0.78rem;
+  margin-bottom: 0.75rem;
+  color: var(--accent);
+}
+
+.suggest-ing-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.suggest-ing-list li {
+  font-size: 0.95rem;
+  color: var(--text);
+  padding-left: 1.1rem;
+  position: relative;
+}
+.suggest-ing-list li::before {
+  content: '·';
+  position: absolute;
+  left: 0;
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.suggest-steps {
+  padding-left: 1.4rem;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+.suggest-steps li {
+  font-size: 0.95rem;
+  color: var(--text);
+  line-height: 1.55;
+}
+
+.suggest-notes {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  line-height: 1.55;
+  font-style: italic;
+}
+
+.suggest-result-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1.75rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+
+.suggest-inline-error {
+  color: #c0392b;
+  font-size: 0.875rem;
+  margin-top: 0.75rem;
+}
+
+@media (max-width: 600px) {
+  .suggest-buttons { flex-direction: column; }
+  .suggest-btn { min-width: 0; }
+  .suggest-result { padding: 1.25rem; }
+  .suggest-result-actions { flex-direction: column; }
+}

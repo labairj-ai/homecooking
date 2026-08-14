@@ -5,7 +5,8 @@ export default function Nav() {
   const { pathname } = useLocation();
   const inCellar = pathname.startsWith('/cellar');
   const inGrocery = pathname.startsWith('/grocery');
-  const inKitchen = !inCellar && !inGrocery;
+  const inSuggest = pathname.startsWith('/suggest');
+  const inKitchen = !inCellar && !inGrocery && !inSuggest;
 
   return (
     <>
@@ -18,8 +19,9 @@ export default function Nav() {
           <Link to="/" className={`nav-link ${inKitchen ? 'active' : ''}`}>My Kitchen</Link>
           <Link to="/cellar" className={`nav-link ${inCellar ? 'active' : ''}`}>My Cellar</Link>
           <Link to="/grocery" className={`nav-link ${inGrocery ? 'active' : ''}`}>Grocery List</Link>
+          <Link to="/suggest" className={`nav-link ${inSuggest ? 'active' : ''}`}>✨ Suggest</Link>
         </div>
-        {!inGrocery && (
+        {!inGrocery && !inSuggest && (
           <Link
             to={inCellar ? '/cellar/add' : '/add'}
             className="btn-primary nav-add-btn"
@@ -43,7 +45,11 @@ export default function Nav() {
           <span className="nav-mobile-icon">🛒</span>
           <span className="nav-mobile-label">List</span>
         </Link>
-        {!inGrocery && (
+        <Link to="/suggest" className={`nav-mobile-tab ${inSuggest ? 'active' : ''}`}>
+          <span className="nav-mobile-icon">✨</span>
+          <span className="nav-mobile-label">Suggest</span>
+        </Link>
+        {!inGrocery && !inSuggest && (
           <Link to={inCellar ? '/cellar/add' : '/add'} className="nav-mobile-tab">
             <span className="nav-mobile-icon">＋</span>
             <span className="nav-mobile-label">{inCellar ? 'Add Drink' : 'Add'}</span>
