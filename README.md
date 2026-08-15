@@ -61,7 +61,7 @@ AI features (`/suggest`, photo Quick Capture) require Ollama running with `phi4:
 npm run deploy
 ```
 
-Builds the client, rsyncs to the optiplex server, installs deps, and restarts the systemd service.
+Builds the client, rsyncs to the home server, installs deps, and restarts the systemd service.
 
 ## Data
 
