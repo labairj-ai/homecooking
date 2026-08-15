@@ -42,7 +42,7 @@ Enter ingredients you have on hand, pick your options, and a local LLM generates
 - **Frontend**: React 18 + React Router + Vite
 - **Backend**: Express.js + better-sqlite3
 - **Image uploads**: Multer (stored in `/uploads/`, 20 MB max)
-- **AI**: [Ollama](https://ollama.com) running locally on the host — `phi4:14b` / `qwen2.5:7b` for recipe generation, `minicpm-v` for image parsing
+- **AI**: [Ollama](https://ollama.com) — `phi4:14b` / `qwen2.5:7b` for recipe generation, `minicpm-v` for image parsing. The server reads `OLLAMA_URL` from the environment (default `http://localhost:11434`); in production the systemd unit points this to a dedicated always-on machine (e.g. a Mac mini over Tailscale)
 
 ## Dev setup
 
@@ -53,7 +53,7 @@ npm run dev
 
 Runs the Express server and Vite dev server concurrently. App opens on the port shown in the terminal.
 
-AI features (`/suggest`, photo Quick Capture) require Ollama running on `localhost:11434` with `phi4:14b`, `qwen2.5:7b`, and `minicpm-v` pulled.
+AI features (`/suggest`, photo Quick Capture) require Ollama running with `phi4:14b`, `qwen2.5:7b`, and `minicpm-v` pulled. In dev, Ollama defaults to `localhost:11434`; set `OLLAMA_URL` in the environment to point elsewhere.
 
 ## Deploy
 
