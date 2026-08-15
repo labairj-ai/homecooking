@@ -3,7 +3,8 @@ const express = require('express');
 const router = express.Router();
 
 const ALLOWED_MODELS = ['phi4:14b', 'qwen2.5:7b'];
-const NUM_PREDICT = { 'phi4:14b': 1500, 'qwen2.5:7b': 1000 };
+const NUM_PREDICT   = { 'phi4:14b': 2500, 'qwen2.5:7b': 1500 };
+const MODEL_TIMEOUT = { 'phi4:14b': 600_000, 'qwen2.5:7b': 180_000 };
 
 // In-memory job store; entries expire after 15 minutes
 const _jobs = new Map();
@@ -27,6 +28,28 @@ function updateJob(id, patch) {
 
 function safeModel(m) {
   return ALLOWED_MODELS.includes(m) ? m : 'phi4:14b';
+}
+
+// 4-strategy JSON extractor: handles preamble text, truncated output, unclosed brackets
+function extractJson(text) {
+  const s = text.trim();
+  try { return JSON.parse(s); } catch (_) {}
+
+  const match = s.match(/\{[\s\S]*\}/);
+  if (!match) throw new Error('No JSON object found in model output');
+  let block = match[0];
+
+  try { return JSON.parse(block); } catch (_) {}
+
+  // Repair truncated JSON: close open string, then arrays, then objects
+  if ((block.match(/"/g) || []).length % 2 !== 0) block += '"';
+  const openArrays  = (block.match(/\[/g) || []).length - (block.match(/\]/g) || []).length;
+  const openBraces  = (block.match(/\{/g) || []).length - (block.match(/\}/g) || []).length;
+  for (let i = 0; i < openArrays; i++) block += ']';
+  for (let i = 0; i < openBraces;  i++) block += '}';
+
+  try { return JSON.parse(block); } catch (_) {}
+  throw new Error('Could not parse model output as JSON after repair attempts');
 }
 
 function buildPrompt(ingredients, type, cookTime, concept) {
@@ -86,10 +109,9 @@ async function runJob(jobId, ingredients, type, cookTime, model, concept) {
         model: m,
         prompt: buildPrompt(ingredients, type, cookTime, concept),
         stream: true,
-        format: 'json',
-        options: { temperature: 0.45, num_predict: NUM_PREDICT[m] || 1500 },
+        options: { temperature: 0.35, num_predict: NUM_PREDICT[m] || 2500 },
       }),
-      signal: AbortSignal.timeout(360_000),
+      signal: AbortSignal.timeout(MODEL_TIMEOUT[m] || 600_000),
     });
 
     if (!ollamaRes.ok) throw new Error(`Ollama returned HTTP ${ollamaRes.status}`);
@@ -121,7 +143,7 @@ async function runJob(jobId, ingredients, type, cookTime, model, concept) {
       }
     }
 
-    const recipe = JSON.parse(accumulated.trim());
+    const recipe = extractJson(accumulated);
     updateJob(jobId, { status: 'done', result: recipe });
   } catch (err) {
     updateJob(jobId, { status: 'error', error: err.message });

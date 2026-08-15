@@ -41,6 +41,7 @@ export default function SuggestRecipe() {
   const [saving, setSaving] = useState(null);
 
   const abortCtrlRef = useRef(null);
+  const cancelledRef = useRef(false);
   const currentTypeRef = useRef(null);
   const streamEndRef = useRef(null);
 
@@ -91,8 +92,7 @@ export default function SuggestRecipe() {
   // --- Full recipe generation ---
   async function suggest(type, concept = null) {
     abortCtrlRef.current?.abort();
-    const ctrl = new AbortController();
-    abortCtrlRef.current = ctrl;
+    cancelledRef.current = false;
     currentTypeRef.current = type;
 
     setState('streaming');
@@ -100,60 +100,84 @@ export default function SuggestRecipe() {
     setError(null);
     setRecipe(null);
 
-    try {
-      let jobData;
-      let lastErr;
-      for (let attempt = 0; attempt < 3; attempt++) {
-        try {
-          if (attempt > 0) {
-            setStreamText(`Retrying (${attempt}/2)…`);
-            await sleep(1500 * attempt);
+    for (let attempt = 0; attempt < 2; attempt++) {
+      if (cancelledRef.current) return;
+
+      const ctrl = new AbortController();
+      abortCtrlRef.current = ctrl;
+
+      let watchdog = null;
+      let timedOut = false;
+
+      try {
+        // 3-retry POST to start the async job
+        let jobData;
+        let lastErr;
+        for (let p = 0; p < 3; p++) {
+          try {
+            if (p > 0) await sleep(1500 * p);
+            jobData = await api.suggestRecipe(ingredients, type, model, cookTime, concept);
+            break;
+          } catch (e) {
+            lastErr = e;
+            if (p === 2) throw lastErr;
           }
-          jobData = await api.suggestRecipe(ingredients, type, model, cookTime, concept);
-          break;
-        } catch (e) {
-          lastErr = e;
-          if (attempt === 2) throw lastErr;
         }
-      }
 
-      if (!jobData.ok) throw new Error(jobData.error || 'Failed to start generation');
+        if (!jobData.ok) throw new Error(jobData.error || 'Failed to start generation');
 
-      const response = await fetch(`/api/suggest-recipe/stream/${jobData.job_id}`, {
-        signal: ctrl.signal,
-      });
-      if (!response.ok) throw new Error(`Stream error: ${response.status}`);
+        const response = await fetch(`/api/suggest-recipe/stream/${jobData.job_id}`, {
+          signal: ctrl.signal,
+        });
+        if (!response.ok) throw new Error(`Stream error: ${response.status}`);
 
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let sseBuffer = '';
-      let fullText = '';
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let sseBuffer = '';
+        let fullText = '';
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        sseBuffer += decoder.decode(value, { stream: true });
-        const lines = sseBuffer.split('\n');
-        sseBuffer = lines.pop();
+        // Watchdog: if no token arrives within 90s, abort and flag as timed-out
+        function resetWatchdog() {
+          clearTimeout(watchdog);
+          watchdog = setTimeout(() => { timedOut = true; ctrl.abort(); }, 90_000);
+        }
+        resetWatchdog();
 
-        for (const line of lines) {
-          if (!line.startsWith('data: ')) continue;
-          const dataStr = line.slice(6).trim();
-          if (!dataStr) continue;
-          const data = JSON.parse(dataStr);
-          if (data.token) {
-            fullText += data.token;
-            setStreamText(fullText);
-            streamEndRef.current?.scrollIntoView({ block: 'nearest' });
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          sseBuffer += decoder.decode(value, { stream: true });
+          const lines = sseBuffer.split('\n');
+          sseBuffer = lines.pop();
+
+          for (const line of lines) {
+            if (!line.startsWith('data: ')) continue;
+            const dataStr = line.slice(6).trim();
+            if (!dataStr) continue;
+            const data = JSON.parse(dataStr);
+            if (data.token) {
+              fullText += data.token;
+              setStreamText(fullText);
+              streamEndRef.current?.scrollIntoView({ block: 'nearest' });
+              resetWatchdog();
+            }
+            if (data.error) { clearTimeout(watchdog); throw new Error(data.error); }
+            if (data.done) { clearTimeout(watchdog); setRecipe(data.recipe); setState('done'); return; }
           }
-          if (data.error) throw new Error(data.error);
-          if (data.done) { setRecipe(data.recipe); setState('done'); return; }
         }
+      } catch (err) {
+        clearTimeout(watchdog);
+        // User clicked "Try Another" — exit silently
+        if (cancelledRef.current || (err.name === 'AbortError' && !timedOut)) return;
+        // Auto-retry once before surfacing error
+        if (attempt === 0) {
+          setStreamText(timedOut ? 'No response — retrying…' : 'Connection error — retrying…');
+          await sleep(2000);
+          continue;
+        }
+        setError(timedOut ? 'Model timed out — try switching to ⚡ Fast model' : err.message);
+        setState('error');
       }
-    } catch (err) {
-      if (err.name === 'AbortError') return;
-      setError(err.message);
-      setState('error');
     }
   }
 
@@ -163,6 +187,7 @@ export default function SuggestRecipe() {
 
   // "Try Another" during streaming → back to same concept cards
   function handleStop() {
+    cancelledRef.current = true;
     abortCtrlRef.current?.abort();
     setState('concepts');
   }
@@ -199,6 +224,7 @@ export default function SuggestRecipe() {
   }
 
   function reset() {
+    cancelledRef.current = true;
     abortCtrlRef.current?.abort();
     setState('idle');
     setRecipe(null);
