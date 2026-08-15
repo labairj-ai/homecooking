@@ -2,6 +2,8 @@ const express = require('express');
 
 const router = express.Router();
 
+const OLLAMA_URL = process.env.OLLAMA_URL || 'http://localhost:11434';
+
 const ALLOWED_MODELS = ['phi4:14b', 'qwen2.5:7b'];
 const NUM_PREDICT   = { 'phi4:14b': 2500, 'qwen2.5:7b': 1500 };
 const MODEL_TIMEOUT = { 'phi4:14b': 600_000, 'qwen2.5:7b': 180_000 };
@@ -102,7 +104,7 @@ async function runJob(jobId, ingredients, type, cookTime, model, concept) {
   try {
     updateJob(jobId, { status: 'running' });
 
-    const ollamaRes = await fetch('http://localhost:11434/api/generate', {
+    const ollamaRes = await fetch(`${OLLAMA_URL}/api/generate`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -218,7 +220,7 @@ Return ONLY a JSON object in this exact structure — no text outside:
 Make the 3 concepts meaningfully different from each other in style, technique, or flavor profile.`;
 
   try {
-    const ollamaRes = await fetch('http://localhost:11434/api/generate', {
+    const ollamaRes = await fetch(`${OLLAMA_URL}/api/generate`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

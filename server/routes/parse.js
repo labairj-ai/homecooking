@@ -5,6 +5,8 @@ const fs = require('fs');
 const crypto = require('crypto');
 const pdfParse = require('pdf-parse');
 
+const OLLAMA_URL = process.env.OLLAMA_URL || 'http://localhost:11434';
+
 const router = express.Router();
 
 const UPLOADS_DIR = path.join(__dirname, '..', '..', 'uploads');
@@ -70,7 +72,7 @@ async function runParseJob(jobId, filePath) {
     const imageData = fs.readFileSync(filePath).toString('base64');
 
     updateJob(jobId, { progress: 'Sending to minicpm-v…' });
-    const res = await fetch('http://localhost:11434/api/generate', {
+    const res = await fetch(`${OLLAMA_URL}/api/generate`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
