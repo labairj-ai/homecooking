@@ -22,8 +22,8 @@ Enter ingredients you have on hand, pick your options, and a local LLM generates
 - **Model selector** — toggle between ⚡ Fast (`qwen2.5:7b`, ~30 sec) and ✦ Best (`phi4:14b`, 1–5 min)
 - **Cook time constraint** — pill chips (Any / < 30 min / 30–60 min / 1+ hour) added to the prompt as a soft constraint
 - **Try Another** — during streaming goes back to the concept cards to pick a different idea; New Concepts fetches a fresh set of 3
-- **Save to My Kitchen** — one-click save populates the full recipe directly into the app
-- **Connection resilient** — 3-retry POST on network error; SSE stream with reconnect handling; 6-minute server-side timeout for slow CPU inference
+- **Save to My Kitchen / Try It** — one-click save goes live immediately, or stage it in the Try It queue to test first
+- **Resilient generation** — 4-strategy JSON repair recovers truncated model output; 90-second SSE watchdog prevents silent hangs; auto-retry once on stream error; model-aware timeouts (phi4: 10 min, qwen: 3 min); 3-retry POST with backoff for job start
 
 ### My Cellar (`/cellar`)
 - **Wine, Beer & Spirits** — bottle/drink entries with subcategory filters
@@ -33,7 +33,8 @@ Enter ingredients you have on hand, pick your options, and a local LLM generates
 ### Shared
 - **Photo support** — upload a photo per entry; click the preview to set a **focal point** (x/y %) that controls which part of the photo shows on cards and the detail hero image
 - **Tags** — freeform tags with keyboard-friendly input
-- **Mobile nav** — fixed bottom tab bar on small screens (Kitchen / Cellar / List / Suggest), top nav on desktop
+- **Try It queue** (`/tryit`) — staging area for AI-generated recipes; promote to My Kitchen once tested or delete if not a keeper; banner on home page shows queue count
+- **Mobile nav** — fixed bottom tab bar on small screens (Kitchen / Cellar / List / Suggest / Try It), top nav on desktop
 - **Favicon** — branded SVG pan+egg icon (`/favicon.svg`)
 
 ## Stack
@@ -72,3 +73,4 @@ SQLite database at `homecooking.db` (auto-created on first run, versioned migrat
 | v2 | Added `focal_x`, `focal_y` to recipes |
 | v3 | Added `grocery_items` table |
 | v4 | Added `step_group TEXT` to `ingredients` (flow table feature) |
+| v5 | Added `is_trial INTEGER` to `recipes` (Try It queue) |
