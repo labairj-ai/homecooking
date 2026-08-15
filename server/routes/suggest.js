@@ -4,9 +4,9 @@ const router = express.Router();
 
 const OLLAMA_URL = process.env.OLLAMA_URL || 'http://localhost:11434';
 
-const ALLOWED_MODELS = ['phi4:14b', 'qwen2.5:7b'];
-const NUM_PREDICT   = { 'phi4:14b': 2500, 'qwen2.5:7b': 1500 };
-const MODEL_TIMEOUT = { 'phi4:14b': 600_000, 'qwen2.5:7b': 180_000 };
+const ALLOWED_MODELS = ['phi4:14b', 'qwen2.5:14b'];
+const NUM_PREDICT   = { 'phi4:14b': 2500, 'qwen2.5:14b': 2000 };
+const MODEL_TIMEOUT = { 'phi4:14b': 600_000, 'qwen2.5:14b': 300_000 };
 
 // In-memory job store; entries expire after 15 minutes
 const _jobs = new Map();
@@ -230,7 +230,7 @@ Make the 3 concepts meaningfully different from each other in style, technique, 
         format: 'json',
         options: { temperature: 0.65, num_predict: 350 },
       }),
-      signal: AbortSignal.timeout(90_000),
+      signal: AbortSignal.timeout(180_000),
     });
 
     if (!ollamaRes.ok) throw new Error(`Ollama returned HTTP ${ollamaRes.status}`);

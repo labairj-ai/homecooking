@@ -17,7 +17,7 @@ const COOK_TIMES = [
 ];
 
 const MODELS = [
-  { label: '⚡ Fast', sub: 'qwen2.5:7b', value: 'qwen2.5:7b' },
+  { label: '⚡ Fast', sub: 'qwen2.5:14b', value: 'qwen2.5:14b' },
   { label: '✦ Best', sub: 'phi4:14b', value: 'phi4:14b' },
 ];
 
@@ -263,7 +263,7 @@ export default function SuggestRecipe() {
             ))}
           </div>
           <span className="model-toggle-note">
-            {model === 'qwen2.5:7b' ? '~30 sec' : '1–5 min'}
+            {model === 'qwen2.5:14b' ? '~1–2 min' : '2–5 min'}
           </span>
         </div>
 
@@ -384,7 +384,7 @@ export default function SuggestRecipe() {
               <span className="suggest-cursor" />
             </pre>
           )}
-          <p className="suggest-model-note">{model} · running locally on CPU · {model === 'qwen2.5:7b' ? '~30 sec' : '1–5 min'}</p>
+          <p className="suggest-model-note">{model} · {model === 'qwen2.5:14b' ? '~1–2 min' : '2–5 min'}</p>
           <div ref={streamEndRef} />
         </div>
       )}
