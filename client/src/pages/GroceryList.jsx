@@ -2,17 +2,39 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { api } from '../api';
 import './GroceryList.css';
 
+const UNDO_DELAY = 5000;
+
 export default function GroceryList() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [draft, setDraft] = useState('');
   const [adding, setAdding] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState(null); // { item } — for toast UI
+  const pendingDeleteRef = useRef(null);
+  const undoTimerRef = useRef(null);
 
   const load = useCallback(() =>
     api.listGrocery().then(setItems).finally(() => setLoading(false)), []);
 
   useEffect(() => { load(); }, [load]);
+
+  useEffect(() => {
+    return () => {
+      if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
+      if (pendingDeleteRef.current) api.deleteGroceryItem(pendingDeleteRef.current.item.id);
+    };
+  }, []);
+
+  async function flushPending() {
+    const pending = pendingDeleteRef.current;
+    if (!pending) return;
+    clearTimeout(undoTimerRef.current);
+    undoTimerRef.current = null;
+    pendingDeleteRef.current = null;
+    setPendingDelete(null);
+    await api.deleteGroceryItem(pending.item.id);
+  }
 
   async function handleAdd(e) {
     e.preventDefault();
@@ -34,16 +56,38 @@ export default function GroceryList() {
   }
 
   async function handleDelete(id) {
-    await api.deleteGroceryItem(id);
+    await flushPending();
+    const item = items.find((i) => i.id === id);
     setItems((prev) => prev.filter((i) => i.id !== id));
+    const entry = { item };
+    pendingDeleteRef.current = entry;
+    setPendingDelete(entry);
+    undoTimerRef.current = setTimeout(async () => {
+      await api.deleteGroceryItem(id);
+      pendingDeleteRef.current = null;
+      setPendingDelete(null);
+      undoTimerRef.current = null;
+    }, UNDO_DELAY);
+  }
+
+  async function handleUndo() {
+    if (!pendingDeleteRef.current) return;
+    clearTimeout(undoTimerRef.current);
+    undoTimerRef.current = null;
+    pendingDeleteRef.current = null;
+    setPendingDelete(null);
+    const data = await api.listGrocery();
+    setItems(data);
   }
 
   async function handleClearChecked() {
+    await flushPending();
     await api.clearGrocery(false);
     setItems((prev) => prev.filter((i) => !i.checked));
   }
 
   async function handleClearAll() {
+    await flushPending();
     await api.clearGrocery(true);
     setItems([]);
   }
@@ -143,6 +187,16 @@ export default function GroceryList() {
           onClose={() => setPickerOpen(false)}
           addedTitles={Object.keys(byRecipe)}
         />
+      )}
+
+      {pendingDelete && (
+        <div className="undo-toast" key={pendingDelete.item.id}>
+          <span className="undo-toast-msg">
+            {pendingDelete.item.name} removed
+          </span>
+          <button className="undo-btn" onClick={handleUndo}>Undo</button>
+          <div className="undo-toast-progress" />
+        </div>
       )}
     </div>
   );

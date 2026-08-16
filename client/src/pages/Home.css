@@ -64,6 +64,7 @@
   display: flex;
   gap: 0.5rem;
   margin-bottom: 1.5rem;
+  overflow-x: hidden;
 }
 .subfilter-tabs {
   margin-top: -0.75rem;
@@ -82,6 +83,18 @@
   border-radius: 24px;
   font-size: 0.875rem;
   transition: all 0.15s;
+  white-space: nowrap;
+}
+
+@media (max-width: 600px) {
+  .filter-tabs { gap: 0.3rem; }
+  .filter-tab {
+    flex: 1;
+    min-width: 0;
+    padding: 0.4rem 0.3rem;
+    font-size: 0.78rem;
+    text-align: center;
+  }
 }
 .filter-tab:hover { border-color: var(--accent); color: var(--accent); }
 .filter-tab.active { background: var(--accent); border-color: var(--accent); color: #fff; }

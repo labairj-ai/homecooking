@@ -13,5 +13,15 @@
 }
 
 @media (max-width: 600px) {
-  .main-content { padding: 1rem 1rem calc(60px + 1rem); }
+  html, body { height: 100%; }
+  .app {
+    height: 100vh;
+    height: 100svh; /* small viewport height — consistent regardless of browser chrome */
+    min-height: 0;
+  }
+  .main-content {
+    order: 2;
+    overflow-y: auto;
+    padding: 1rem 1rem 1rem;
+  }
 }
