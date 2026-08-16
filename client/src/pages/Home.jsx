@@ -7,6 +7,7 @@ import './Home.css';
 const FILTERS = [
   { label: 'All', value: '' },
   { label: 'Recipes', value: 'recipe' },
+  { label: 'Sides', value: 'sides' },
   { label: 'Cocktails', value: 'cocktail' },
 ];
 
@@ -15,6 +16,7 @@ const SUBCATEGORIES = [
   { label: '🍳 Breakfast', value: 'breakfast' },
   { label: '🥗 Lunch', value: 'lunch' },
   { label: '🍲 Dinner', value: 'dinner' },
+  { label: '🥦 Sides', value: 'sides' },
   { label: '🍰 Dessert', value: 'dessert' },
 ];
 
@@ -35,7 +37,7 @@ export default function Home() {
       const [data, trials] = await Promise.all([
         searchTerms.length > 0
           ? api.searchRecipes(searchTerms.join(','))
-          : api.listRecipes(filter),
+          : api.listRecipes(filter === 'sides' ? 'recipe' : filter),
         api.listRecipes('', true),
       ]);
       setRecipes(data);
@@ -78,6 +80,7 @@ export default function Home() {
     ? recipes.filter((r) => r.type !== 'drink')
     : recipes.filter((r) => {
         if (r.type === 'drink') return false;
+        if (filter === 'sides') return r.type === 'recipe' && r.subcategory === 'sides';
         if (filter && r.type !== filter) return false;
         if (filter === 'recipe' && subFilter && r.subcategory !== subFilter) return false;
         return true;
