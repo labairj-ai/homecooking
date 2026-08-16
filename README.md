@@ -5,13 +5,13 @@ Personal recipe and drink manager split into two siloed sections: **My Kitchen**
 ## Features
 
 ### My Kitchen (`/`)
-- **Recipes & Cocktails** — separate types with subcategories (Breakfast, Lunch, Dinner, Dessert)
+- **Recipes & Cocktails** — separate types with subcategories (Breakfast, Lunch, Dinner, Sides, Dessert)
 - **Ingredient search** — find recipes that contain all queried ingredients
 - **Rich text editor** — TipTap-powered instructions and notes with formatting
 - **Ingredients** — amounts, units (including time units: sec/min/hr), and names with optional **Flow step labels**; rows are reorderable via drag-and-drop (desktop mouse and mobile touch)
 - **Flow Table view** — toggle on any recipe detail page to see a matrix layout: ingredients as rows, cooking steps as columns, with merged cells showing which ingredients combine at each step. Step labels are case-insensitive and deduplicated; the step field offers a datalist dropdown of existing steps to prevent naming drift.
 - **Cook Mode** — full-screen step-by-step overlay with Wake Lock (keeps screen on)
-- **Grocery List** — add all ingredients from any recipe with one tap; manual add; checkbox/clear
+- **Grocery List** — add all ingredients from any recipe with one tap; manual add; checkbox/clear; swipe-delete with 5-second undo toast
 - **Quick Capture** — import recipes from a URL, scanned photo (via `minicpm-v` vision AI), or PDF
 
 ### ✨ What Can I Make? (`/suggest`)
@@ -19,7 +19,7 @@ Enter ingredients you have on hand, pick your options, and a local LLM generates
 
 - **Concept picker** — clicking Food or Cocktail first generates 3 short title+tagline ideas to choose from; pick the one that sounds right before committing to the full generation
 - **Real-time streaming** — tokens appear as the model generates them in a live text panel with a blinking cursor
-- **Model selector** — toggle between ⚡ Fast (`qwen2.5:7b`, ~30 sec) and ✦ Best (`phi4:14b`, 1–5 min)
+- **Model selector** — toggle between ⚡ Fast (`qwen2.5:14b`, ~30 sec) and ✦ Best (`phi4:14b`, 1–5 min)
 - **Cook time constraint** — pill chips (Any / < 30 min / 30–60 min / 1+ hour) added to the prompt as a soft constraint
 - **Try Another** — during streaming goes back to the concept cards to pick a different idea; New Concepts fetches a fresh set of 3
 - **Save to My Kitchen / Try It** — one-click save goes live immediately, or stage it in the Try It queue to test first
@@ -34,7 +34,7 @@ Enter ingredients you have on hand, pick your options, and a local LLM generates
 - **Photo support** — upload a photo per entry; click the preview to set a **focal point** (x/y %) that controls which part of the photo shows on cards and the detail hero image
 - **Tags** — freeform tags with keyboard-friendly input
 - **Try It queue** (`/tryit`) — staging area for AI-generated recipes; promote to My Kitchen once tested or delete if not a keeper; banner on home page shows queue count
-- **Mobile nav** — fixed bottom tab bar on small screens (Kitchen / Cellar / List / Suggest / Try It), top nav on desktop
+- **Mobile nav** — bottom tab bar on small screens (Kitchen / Cellar / List / Suggest / Try It) pinned via flex layout with `100svh`, top nav on desktop
 - **Favicon** — branded SVG pan+egg icon (`/favicon.svg`)
 
 ## Stack
@@ -42,7 +42,7 @@ Enter ingredients you have on hand, pick your options, and a local LLM generates
 - **Frontend**: React 18 + React Router + Vite
 - **Backend**: Express.js + better-sqlite3
 - **Image uploads**: Multer (stored in `/uploads/`, 20 MB max)
-- **AI**: [Ollama](https://ollama.com) — `phi4:14b` / `qwen2.5:7b` for recipe generation, `minicpm-v` for image parsing. The server reads `OLLAMA_URL` from the environment (default `http://localhost:11434`); in production the systemd unit points this to a dedicated always-on machine (e.g. a Mac mini over Tailscale)
+- **AI**: [Ollama](https://ollama.com) — `phi4:14b` / `qwen2.5:14b` for recipe generation, `minicpm-v` for image parsing. The server reads `OLLAMA_URL` from the environment (default `http://localhost:11434`); in production the systemd unit points this to a dedicated always-on machine (e.g. a Mac mini over Tailscale)
 
 ## Dev setup
 
