@@ -8,16 +8,8 @@ const FILTERS = [
   { label: 'All', value: '' },
   { label: 'Recipes', value: 'recipe' },
   { label: 'Sides', value: 'sides' },
+  { label: 'Desserts', value: 'dessert' },
   { label: 'Cocktails', value: 'cocktail' },
-];
-
-const SUBCATEGORIES = [
-  { label: 'All', value: '' },
-  { label: '🍳 Breakfast', value: 'breakfast' },
-  { label: '🥗 Lunch', value: 'lunch' },
-  { label: '🍲 Dinner', value: 'dinner' },
-  { label: '🥦 Sides', value: 'sides' },
-  { label: '🍰 Dessert', value: 'dessert' },
 ];
 
 export default function Home() {
@@ -25,7 +17,6 @@ export default function Home() {
   const [trialCount, setTrialCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('');
-  const [subFilter, setSubFilter] = useState('');
   const [searchTerms, setSearchTerms] = useState([]);
   const [termDraft, setTermDraft] = useState('');
   const [error, setError] = useState(null);
@@ -37,7 +28,7 @@ export default function Home() {
       const [data, trials] = await Promise.all([
         searchTerms.length > 0
           ? api.searchRecipes(searchTerms.join(','))
-          : api.listRecipes(filter === 'sides' ? 'recipe' : filter),
+          : api.listRecipes(filter === 'sides' || filter === 'dessert' ? 'recipe' : filter),
         api.listRecipes('', true),
       ]);
       setRecipes(data);
@@ -81,8 +72,8 @@ export default function Home() {
     : recipes.filter((r) => {
         if (r.type === 'drink') return false;
         if (filter === 'sides') return r.type === 'recipe' && r.subcategory === 'sides';
+        if (filter === 'dessert') return r.type === 'recipe' && r.subcategory === 'dessert';
         if (filter && r.type !== filter) return false;
-        if (filter === 'recipe' && subFilter && r.subcategory !== subFilter) return false;
         return true;
       });
 
@@ -123,32 +114,17 @@ export default function Home() {
       </div>
 
       {searchTerms.length === 0 && (
-        <>
-          <div className="filter-tabs">
-            {FILTERS.map((f) => (
-              <button
-                key={f.value}
-                className={`filter-tab ${filter === f.value ? 'active' : ''}`}
-                onClick={() => { setFilter(f.value); setSubFilter(''); }}
-              >
-                {f.label}
-              </button>
-            ))}
-          </div>
-          {filter === 'recipe' && (
-            <div className="filter-tabs subfilter-tabs">
-              {SUBCATEGORIES.map((s) => (
-                <button
-                  key={s.value}
-                  className={`filter-tab ${subFilter === s.value ? 'active' : ''}`}
-                  onClick={() => setSubFilter(s.value)}
-                >
-                  {s.label}
-                </button>
-              ))}
-            </div>
-          )}
-        </>
+        <div className="filter-tabs">
+          {FILTERS.map((f) => (
+            <button
+              key={f.value}
+              className={`filter-tab ${filter === f.value ? 'active' : ''}`}
+              onClick={() => setFilter(f.value)}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
       )}
 
       {loading && <div className="state-msg">Loading…</div>}
