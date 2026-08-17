@@ -33,7 +33,7 @@ Enter ingredients you have on hand, pick your options, and a local LLM generates
 ### Shared
 - **Photo support** — upload a photo per entry; click the preview to set a **focal point** (x/y %) that controls which part of the photo shows on cards and the detail hero image
 - **Tags** — freeform tags with keyboard-friendly input
-- **Try It queue** (`/tryit`) — staging area for AI-generated recipes; promote to My Kitchen once tested or delete if not a keeper; banner on home page shows queue count
+- **Try It queue** (`/tryit`) — staging area for recipes; promote to My Kitchen once tested or delete if not a keeper; banner on home page shows queue count; includes URL import (paste any recipe URL to scrape and add directly to the queue)
 - **Mobile nav** — bottom tab bar on small screens (Kitchen / Cellar / List / Suggest / Try It) pinned via flex layout with `100svh`, top nav on desktop
 - **Favicon** — branded SVG pan+egg icon (`/favicon.svg`)
 

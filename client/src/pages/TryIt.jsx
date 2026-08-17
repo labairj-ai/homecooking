@@ -13,6 +13,9 @@ export default function TryIt() {
   const [error, setError] = useState(null);
   const [promoting, setPromoting] = useState(null);
   const [deleting, setDeleting] = useState(null);
+  const [urlDraft, setUrlDraft] = useState('');
+  const [importing, setImporting] = useState(false);
+  const [importError, setImportError] = useState(null);
 
   async function load() {
     setLoading(true);
@@ -53,6 +56,36 @@ export default function TryIt() {
     }
   }
 
+  async function handleImportUrl() {
+    const url = urlDraft.trim();
+    if (!url) return;
+    setImporting(true);
+    setImportError(null);
+    try {
+      const { filename, recipe } = await api.fetchRecipeFromUrl(url);
+      const instructions = recipe.instructions?.length
+        ? `<ol>${recipe.instructions.map((s) => `<li>${s}</li>`).join('')}</ol>`
+        : '';
+      const saved = await api.createRecipe({
+        title: recipe.title,
+        type: ['recipe', 'cocktail', 'drink'].includes(recipe.type) ? recipe.type : 'recipe',
+        description: recipe.description || '',
+        instructions,
+        notes: recipe.notes || '',
+        image_path: filename || null,
+        is_trial: 1,
+        ingredients: (recipe.ingredients || []).filter((i) => i.name?.trim()),
+        tags: [],
+      });
+      setRecipes((prev) => [saved, ...prev]);
+      setUrlDraft('');
+    } catch (e) {
+      setImportError(e.message);
+    } finally {
+      setImporting(false);
+    }
+  }
+
   return (
     <div className="tryit">
       <div className="tryit-header">
@@ -60,6 +93,27 @@ export default function TryIt() {
         <p className="tryit-subtitle">
           Recipes waiting to be tested — move to My Kitchen once approved, or delete if not a keeper.
         </p>
+      </div>
+
+      <div className="tryit-import">
+        <div className="tryit-import-row">
+          <input
+            className="tryit-import-input"
+            placeholder="Paste a recipe URL to add to queue…"
+            value={urlDraft}
+            onChange={(e) => setUrlDraft(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') handleImportUrl(); }}
+            disabled={importing}
+          />
+          <button
+            className="tryit-import-btn"
+            onClick={handleImportUrl}
+            disabled={importing || !urlDraft.trim()}
+          >
+            {importing ? 'Importing…' : 'Import'}
+          </button>
+        </div>
+        {importError && <p className="tryit-import-error">Error: {importError}</p>}
       </div>
 
       {loading && <div className="state-msg">Loading…</div>}
