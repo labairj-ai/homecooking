@@ -150,6 +150,19 @@
 }
 .notes-section { background: var(--surface2); border-radius: var(--radius); padding: 1rem 1.25rem; }
 
+.btn-ask-ai {
+  background: none;
+  border: 1.5px solid var(--accent);
+  color: var(--accent);
+  font-size: 0.875rem;
+  font-weight: 600;
+  padding: 0.45rem 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.btn-ask-ai:hover { background: var(--accent); color: #fff; }
+
 .btn-share {
   background: none;
   border: 1.5px solid var(--border);

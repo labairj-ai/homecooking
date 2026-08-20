@@ -7,6 +7,7 @@ const groceryRouter = require('./routes/grocery');
 const parseRouter = require('./routes/parse');
 const fetchRecipeRouter = require('./routes/fetch-recipe');
 const suggestRouter = require('./routes/suggest');
+const chatRouter = require('./routes/chat');
 
 const app = express();
 const PORT = process.env.PORT || 4100;
@@ -23,6 +24,7 @@ app.use('/api/grocery', groceryRouter);
 app.use('/api/parse-recipe', parseRouter);
 app.use('/api/fetch-recipe', fetchRecipeRouter);
 app.use('/api/suggest-recipe', suggestRouter);
+app.use('/api/recipes/:id/chat', chatRouter);
 
 // Serve built React app in production
 const distPath = path.join(__dirname, '..', 'client', 'dist');

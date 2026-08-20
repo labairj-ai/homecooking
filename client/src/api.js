@@ -98,4 +98,13 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ingredients, type, model, cookTime }),
     }).then(json),
+
+  startChat: (id, messages) =>
+    fetch(`${BASE}/recipes/${id}/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages }),
+    }).then(json),
+
+  chatStreamUrl: (id, jobId) => `${BASE}/recipes/${id}/chat/stream/${jobId}`,
 };

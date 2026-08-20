@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { api } from '../api';
 import TypeBadge from '../components/TypeBadge';
 import CookMode from '../components/CookMode';
+import RecipeChat from '../components/RecipeChat';
 import FlowTable from '../components/FlowTable';
 import './RecipeDetail.css';
 
@@ -15,6 +16,7 @@ export default function RecipeDetail() {
   const [deleting, setDeleting] = useState(false);
   const [promoting, setPromoting] = useState(false);
   const [cookMode, setCookMode] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
   const [addedToList, setAddedToList] = useState(false);
   const [shared, setShared] = useState(false);
   const [ingView, setIngView] = useState(() => localStorage.getItem(`ingView-${id}`) || 'list');
@@ -134,6 +136,13 @@ export default function RecipeDetail() {
               </button>
             )}
             <button
+              className="btn-ask-ai"
+              onClick={() => setChatOpen((v) => !v)}
+              title="Ask AI about this recipe"
+            >
+              {chatOpen ? '✕ Close AI' : '✦ Ask AI'}
+            </button>
+            <button
               className={`btn-share${shared ? ' btn-share--done' : ''}`}
               onClick={handleShare}
               title="Copy link to share"
@@ -227,6 +236,9 @@ export default function RecipeDetail() {
           title={recipe.title}
           onClose={() => setCookMode(false)}
         />
+      )}
+      {chatOpen && !cookMode && (
+        <RecipeChat recipe={recipe} onClose={() => setChatOpen(false)} />
       )}
     </div>
   );
