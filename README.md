@@ -13,6 +13,7 @@ Personal recipe and drink manager split into two siloed sections: **My Kitchen**
 - **Cook Mode** — full-screen step-by-step overlay with Wake Lock (keeps screen on)
 - **Grocery List** — add all ingredients from any recipe with one tap; manual add; checkbox/clear; swipe-delete with 5-second undo toast
 - **Quick Capture** — import recipes from a URL, scanned photo (via `minicpm-v` vision AI), or PDF
+- **Ask AI** — recipe-aware chat panel on every recipe detail page; ask substitution questions, describe what went wrong, or get specific improvement suggestions; powered by `phi4:14b` with the recipe's ingredients and instructions injected as context; streaming tokens appear in real time; chat is ephemeral (resets on close)
 
 ### ✨ What Can I Make? (`/suggest`)
 Enter ingredients you have on hand, pick your options, and a local LLM generates recipe ideas.
