@@ -12,15 +12,15 @@ Personal recipe and drink manager split into two siloed sections: **My Kitchen**
 - **Flow Table view** — toggle on any recipe detail page to see a matrix layout: ingredients as rows, cooking steps as columns, with merged cells showing which ingredients combine at each step. Step labels are case-insensitive and deduplicated; the step field offers a datalist dropdown of existing steps to prevent naming drift.
 - **Cook Mode** — full-screen step-by-step overlay with Wake Lock (keeps screen on)
 - **Grocery List** — add all ingredients from any recipe with one tap; manual add; checkbox/clear; swipe-delete with 5-second undo toast
-- **Quick Capture** — import recipes from a URL, scanned photo (via `minicpm-v` vision AI), or PDF
-- **Ask AI** — recipe-aware chat panel on every recipe detail page; ask substitution questions, describe what went wrong, or get specific improvement suggestions; powered by `phi4:14b` with the recipe's ingredients and instructions injected as context; streaming tokens appear in real time; chat is ephemeral (resets on close)
+- **Quick Capture** — import recipes from a URL, scanned photo (via `qwen2.5-vl:7b` vision AI), or PDF
+- **Ask AI** — recipe-aware chat panel on every recipe detail page; ask substitution questions, describe what went wrong, or get specific improvement suggestions; powered by `llama3.3:70b` with the recipe's ingredients and instructions injected as context; streaming tokens appear in real time; chat is ephemeral (resets on close)
 
 ### ✨ What Can I Make? (`/suggest`)
 Enter ingredients you have on hand, pick your options, and a local LLM generates recipe ideas.
 
 - **Concept picker** — clicking Food or Cocktail first generates 3 short title+tagline ideas to choose from; pick the one that sounds right before committing to the full generation
 - **Real-time streaming** — tokens appear as the model generates them in a live text panel with a blinking cursor
-- **Model selector** — toggle between ⚡ Fast (`qwen2.5:14b`, ~30 sec) and ✦ Best (`phi4:14b`, 1–5 min)
+- **Model** — `llama3.3:70b` via Ollama (runs on a dedicated always-on Apple Silicon machine)
 - **Cook time constraint** — pill chips (Any / < 30 min / 30–60 min / 1+ hour) added to the prompt as a soft constraint
 - **Try Another** — during streaming goes back to the concept cards to pick a different idea; New Concepts fetches a fresh set of 3
 - **Save to My Kitchen / Try It** — one-click save goes live immediately, or stage it in the Try It queue to test first
@@ -43,7 +43,7 @@ Enter ingredients you have on hand, pick your options, and a local LLM generates
 - **Frontend**: React 18 + React Router + Vite
 - **Backend**: Express.js + better-sqlite3
 - **Image uploads**: Multer (stored in `/uploads/`, 20 MB max)
-- **AI**: [Ollama](https://ollama.com) — `phi4:14b` / `qwen2.5:14b` for recipe generation, `minicpm-v` for image parsing. The server reads `OLLAMA_URL` from the environment (default `http://localhost:11434`); in production the systemd unit points this to a dedicated always-on machine (e.g. a Mac mini over Tailscale)
+- **AI**: [Ollama](https://ollama.com) — `llama3.3:70b` for recipe generation and chat, `qwen2.5-vl:7b` for image parsing. The server reads `OLLAMA_URL` from the environment (default `http://localhost:11434`); in production the systemd unit points this to a dedicated always-on machine (Mac Studio M1 Max 64 GB over Tailscale)
 
 ## Dev setup
 
@@ -54,7 +54,7 @@ npm run dev
 
 Runs the Express server and Vite dev server concurrently. App opens on the port shown in the terminal.
 
-AI features (`/suggest`, photo Quick Capture) require Ollama running with `phi4:14b`, `qwen2.5:7b`, and `minicpm-v` pulled. In dev, Ollama defaults to `localhost:11434`; set `OLLAMA_URL` in the environment to point elsewhere.
+AI features (`/suggest`, photo Quick Capture) require Ollama running with `llama3.3:70b` and `qwen2.5-vl:7b` pulled. In dev, Ollama defaults to `localhost:11434`; set `OLLAMA_URL` in the environment to point elsewhere.
 
 ## Deploy
 
