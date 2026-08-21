@@ -28,7 +28,7 @@ const upload = multer({
     cb(null, file.mimetype === 'application/pdf' || IMAGE_MIMES.has(file.mimetype)),
 });
 
-// --- Async job store for image parsing (minicpm-v can take ~30-60s) ---
+// --- Async job store for image parsing (qwen2.5-vl:7b can take ~30-60s) ---
 const _jobs = new Map();
 setInterval(() => {
   const cutoff = Date.now() - 15 * 60 * 1000;
@@ -71,12 +71,12 @@ async function runParseJob(jobId, filePath) {
     updateJob(jobId, { status: 'running', progress: 'Reading image…' });
     const imageData = fs.readFileSync(filePath).toString('base64');
 
-    updateJob(jobId, { progress: 'Sending to minicpm-v…' });
+    updateJob(jobId, { progress: 'Sending to qwen2.5-vl:7b…' });
     const res = await fetch(`${OLLAMA_URL}/api/generate`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'minicpm-v',
+        model: 'qwen2.5-vl:7b',
         prompt: VISION_PROMPT,
         images: [imageData],
         stream: false,
@@ -161,7 +161,7 @@ function parseText(raw) {
 
 // POST /api/parse-recipe  (multipart/form-data, field: image)
 // PDF  → synchronous heuristic parse, returns { filename: null, recipe } immediately
-// Image → starts async minicpm-v job, returns { ok: true, job_id }
+// Image → starts async qwen2.5-vl job, returns { ok: true, job_id }
 router.post('/', upload.single('image'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
 

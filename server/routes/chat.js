@@ -4,7 +4,7 @@ const db = require('../db');
 const router = express.Router({ mergeParams: true });
 
 const OLLAMA_URL = process.env.OLLAMA_URL || 'http://localhost:11434';
-const CHAT_MODEL = 'phi4:14b';
+const CHAT_MODEL = 'llama3.3:70b';
 
 // In-memory job store; entries expire after 15 minutes
 const _jobs = new Map();

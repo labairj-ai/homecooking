@@ -4,9 +4,9 @@ const router = express.Router();
 
 const OLLAMA_URL = process.env.OLLAMA_URL || 'http://localhost:11434';
 
-const ALLOWED_MODELS = ['phi4:14b', 'qwen2.5:14b'];
-const NUM_PREDICT   = { 'phi4:14b': 2500, 'qwen2.5:14b': 2000 };
-const MODEL_TIMEOUT = { 'phi4:14b': 600_000, 'qwen2.5:14b': 300_000 };
+const ALLOWED_MODELS = ['llama3.3:70b'];
+const NUM_PREDICT   = { 'llama3.3:70b': 2500 };
+const MODEL_TIMEOUT = { 'llama3.3:70b': 600_000 };
 
 // In-memory job store; entries expire after 15 minutes
 const _jobs = new Map();
@@ -29,7 +29,7 @@ function updateJob(id, patch) {
 }
 
 function safeModel(m) {
-  return ALLOWED_MODELS.includes(m) ? m : 'phi4:14b';
+  return ALLOWED_MODELS.includes(m) ? m : 'llama3.3:70b';
 }
 
 // 4-strategy JSON extractor: handles preamble text, truncated output, unclosed brackets
@@ -160,7 +160,7 @@ router.post('/', (req, res) => {
   }
   const validType = type === 'cocktail' ? 'cocktail' : 'recipe';
   const jobId = newJob();
-  runJob(jobId, ingredients.map(String), validType, cookTime || '', model || 'phi4:14b', concept || null);
+  runJob(jobId, ingredients.map(String), validType, cookTime || '', model || 'llama3.3:70b', concept || null);
   res.json({ ok: true, job_id: jobId });
 });
 
