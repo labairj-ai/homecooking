@@ -3,8 +3,8 @@ const db = require('../db');
 
 const router = express.Router({ mergeParams: true });
 
-const OLLAMA_URL = process.env.OLLAMA_URL || 'http://localhost:11434';
-const CHAT_MODEL = 'llama3.3:70b';
+const LLM_URL   = process.env.LLM_URL   || 'http://localhost:8080';
+const CHAT_MODEL = 'mlx-community/phi-4-4bit';
 
 // In-memory job store; entries expire after 15 minutes
 const _jobs = new Map();
@@ -50,21 +50,22 @@ async function runChat(jobId, systemPrompt, userMessages) {
   try {
     const messages = [{ role: 'system', content: systemPrompt }, ...userMessages];
 
-    const ollamaRes = await fetch(`${OLLAMA_URL}/api/chat`, {
+    const llmRes = await fetch(`${LLM_URL}/v1/chat/completions`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         model: CHAT_MODEL,
         messages,
         stream: true,
-        options: { temperature: 0.4, num_predict: 1000 },
+        temperature: 0.4,
+        max_tokens: 1000,
       }),
       signal: AbortSignal.timeout(120_000),
     });
 
-    if (!ollamaRes.ok) throw new Error(`Ollama returned HTTP ${ollamaRes.status}`);
+    if (!llmRes.ok) throw new Error(`LLM returned HTTP ${llmRes.status}`);
 
-    const reader = ollamaRes.body.getReader();
+    const reader = llmRes.body.getReader();
     const decoder = new TextDecoder();
     let lineBuffer = '';
     let done = false;
@@ -77,12 +78,13 @@ async function runChat(jobId, systemPrompt, userMessages) {
       lineBuffer = lines.pop();
       for (const line of lines) {
         const trimmed = line.trim();
-        if (!trimmed) continue;
+        if (!trimmed || trimmed === 'data: [DONE]') { if (trimmed === 'data: [DONE]') done = true; continue; }
+        if (!trimmed.startsWith('data: ')) continue;
         try {
-          const chunk = JSON.parse(trimmed);
-          const token = chunk.message?.content || '';
+          const chunk = JSON.parse(trimmed.slice(6));
+          const token = chunk.choices?.[0]?.delta?.content || '';
           if (token) job.tokens.push(token);
-          if (chunk.done) { done = true; break; }
+          if (chunk.choices?.[0]?.finish_reason) { done = true; break; }
         } catch (_) {}
       }
     }

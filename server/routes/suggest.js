@@ -2,11 +2,10 @@ const express = require('express');
 
 const router = express.Router();
 
-const OLLAMA_URL = process.env.OLLAMA_URL || 'http://localhost:11434';
-
-const ALLOWED_MODELS = ['llama3.3:70b'];
-const NUM_PREDICT   = { 'llama3.3:70b': 2500 };
-const MODEL_TIMEOUT = { 'llama3.3:70b': 600_000 };
+const LLM_URL   = process.env.LLM_URL   || 'http://localhost:8080';
+const LLM_MODEL = 'mlx-community/phi-4-4bit';
+const NUM_PREDICT   = 2500;
+const MODEL_TIMEOUT = 180_000;
 
 // In-memory job store; entries expire after 15 minutes
 const _jobs = new Map();
@@ -28,8 +27,8 @@ function updateJob(id, patch) {
   if (job) Object.assign(job, patch, { ts: Date.now() });
 }
 
-function safeModel(m) {
-  return ALLOWED_MODELS.includes(m) ? m : 'llama3.3:70b';
+function safeModel(_m) {
+  return LLM_MODEL;
 }
 
 // 4-strategy JSON extractor: handles preamble text, truncated output, unclosed brackets
@@ -100,27 +99,27 @@ Write clear, detailed instructions. Do not truncate — complete the full recipe
 
 async function runJob(jobId, ingredients, type, cookTime, model, concept) {
   const job = _jobs.get(jobId);
-  const m = safeModel(model);
   try {
     updateJob(jobId, { status: 'running' });
 
-    const ollamaRes = await fetch(`${OLLAMA_URL}/api/generate`, {
+    const llmRes = await fetch(`${LLM_URL}/v1/chat/completions`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: m,
-        prompt: buildPrompt(ingredients, type, cookTime, concept),
+        model: safeModel(model),
+        messages: [{ role: 'user', content: buildPrompt(ingredients, type, cookTime, concept) }],
         stream: true,
-        options: { temperature: 0.35, num_predict: NUM_PREDICT[m] || 2500 },
+        temperature: 0.35,
+        max_tokens: NUM_PREDICT,
       }),
-      signal: AbortSignal.timeout(MODEL_TIMEOUT[m] || 600_000),
+      signal: AbortSignal.timeout(MODEL_TIMEOUT),
     });
 
-    if (!ollamaRes.ok) throw new Error(`Ollama returned HTTP ${ollamaRes.status}`);
+    if (!llmRes.ok) throw new Error(`LLM returned HTTP ${llmRes.status}`);
 
     let accumulated = '';
     let done = false;
-    const reader = ollamaRes.body.getReader();
+    const reader = llmRes.body.getReader();
     const decoder = new TextDecoder();
     let lineBuffer = '';
 
@@ -132,15 +131,16 @@ async function runJob(jobId, ingredients, type, cookTime, model, concept) {
       lineBuffer = lines.pop();
       for (const line of lines) {
         const trimmed = line.trim();
-        if (!trimmed) continue;
+        if (!trimmed || trimmed === 'data: [DONE]') { if (trimmed === 'data: [DONE]') done = true; continue; }
+        if (!trimmed.startsWith('data: ')) continue;
         try {
-          const chunk = JSON.parse(trimmed);
-          const token = chunk.response || '';
+          const chunk = JSON.parse(trimmed.slice(6));
+          const token = chunk.choices?.[0]?.delta?.content || '';
           if (token) {
             accumulated += token;
             job.tokens.push(token);
           }
-          if (chunk.done) { done = true; break; }
+          if (chunk.choices?.[0]?.finish_reason) { done = true; break; }
         } catch (_) {}
       }
     }
@@ -160,7 +160,7 @@ router.post('/', (req, res) => {
   }
   const validType = type === 'cocktail' ? 'cocktail' : 'recipe';
   const jobId = newJob();
-  runJob(jobId, ingredients.map(String), validType, cookTime || '', model || 'llama3.3:70b', concept || null);
+  runJob(jobId, ingredients.map(String), validType, cookTime || '', model, concept || null);
   res.json({ ok: true, job_id: jobId });
 });
 
@@ -201,12 +201,9 @@ router.post('/concepts', async (req, res) => {
     return res.status(400).json({ error: 'ingredients required' });
   }
 
-  const m = safeModel(reqModel);
   const label = type === 'cocktail' ? 'cocktail' : 'food recipe';
   const cookTimeNote = cookTime ? `Preference: ${cookTime} total time.\n` : '';
 
-  // Ollama format:"json" only guarantees a JSON object (not a bare array),
-  // so we wrap the list in an object and extract .concepts below.
   const prompt = `You are a culinary expert. Suggest 3 distinct ${label} concepts using some of these ingredients: ${ingredients.join(', ')}.
 ${cookTimeNote}
 Return ONLY a JSON object in this exact structure — no text outside:
@@ -220,23 +217,23 @@ Return ONLY a JSON object in this exact structure — no text outside:
 Make the 3 concepts meaningfully different from each other in style, technique, or flavor profile.`;
 
   try {
-    const ollamaRes = await fetch(`${OLLAMA_URL}/api/generate`, {
+    const llmRes = await fetch(`${LLM_URL}/v1/chat/completions`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: m,
-        prompt,
+        model: safeModel(reqModel),
+        messages: [{ role: 'user', content: prompt }],
         stream: false,
-        format: 'json',
-        options: { temperature: 0.65, num_predict: 350 },
+        temperature: 0.65,
+        max_tokens: 350,
       }),
       signal: AbortSignal.timeout(180_000),
     });
 
-    if (!ollamaRes.ok) throw new Error(`Ollama returned HTTP ${ollamaRes.status}`);
+    if (!llmRes.ok) throw new Error(`LLM returned HTTP ${llmRes.status}`);
 
-    const json = await ollamaRes.json();
-    const text = (json.response || '').trim();
+    const json = await llmRes.json();
+    const text = (json.choices?.[0]?.message?.content || '').trim();
 
     let parsed;
     try { parsed = JSON.parse(text); }
