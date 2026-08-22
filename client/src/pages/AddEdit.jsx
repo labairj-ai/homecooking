@@ -396,9 +396,15 @@ export default function AddEdit() {
             <label>Type *</label>
             <select value={form.type} onChange={(e) => { setField('type', e.target.value); setField('subcategory', ''); }}>
               <option value="recipe">🍽️ Recipe</option>
-              <option value="cocktail">🍸 Cocktail</option>
-              <option value="drink">🥂 Drink</option>
+              <option value="cocktail">🍸 Cocktail Recipe</option>
+              <option value="drink">🥂 Favorite Bottle</option>
             </select>
+            {form.type === 'cocktail' && (
+              <p className="field-hint">Cocktail recipes have ingredients and instructions, just like food recipes.</p>
+            )}
+            {form.type === 'drink' && (
+              <p className="field-hint">Favorite bottles live in My Cellar — track wine, beer, or spirits without a recipe.</p>
+            )}
           </div>
         </div>
 

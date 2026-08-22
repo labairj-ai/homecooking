@@ -85,6 +85,12 @@
   margin: 0;
 }
 
+.field-hint {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin: 4px 0 0;
+}
+
 .remove-image {
   position: absolute;
   top: 4px;
