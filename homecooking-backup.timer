@@ -1,0 +1,9 @@
+[Unit]
+Description=Daily homecooking data backup (2am)
+
+[Timer]
+OnCalendar=*-*-* 02:00:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

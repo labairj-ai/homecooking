@@ -1,0 +1,11 @@
+[Unit]
+Description=Homecooking data backup to GitHub
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=optiplex
+ExecStart=/bin/bash /home/optiplex/homecooking/backup_data.sh
+StandardOutput=append:/home/optiplex/homecooking/backup.log
+StandardError=append:/home/optiplex/homecooking/backup.log
