@@ -45,10 +45,17 @@ function buildSystemPrompt(recipe) {
   return lines.join('\n');
 }
 
+function stripThinking(content) {
+  return (content || '').replace(/<think>[\s\S]*?<\/think>/g, '').trim();
+}
+
 async function runChat(jobId, systemPrompt, userMessages) {
   const job = _jobs.get(jobId);
   try {
-    const messages = [{ role: 'system', content: systemPrompt }, ...userMessages];
+    const cleanedMessages = userMessages.map((m) =>
+      m.role === 'assistant' ? { ...m, content: stripThinking(m.content) } : m,
+    );
+    const messages = [{ role: 'system', content: systemPrompt }, ...cleanedMessages];
 
     const llmRes = await fetch(`${LLM_URL}/v1/chat/completions`, {
       method: 'POST',
@@ -58,7 +65,8 @@ async function runChat(jobId, systemPrompt, userMessages) {
         messages,
         stream: true,
         temperature: 0.4,
-        max_tokens: 1000,
+        max_tokens: 2000,
+        enable_thinking: false,
       }),
       signal: AbortSignal.timeout(120_000),
     });
