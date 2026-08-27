@@ -36,18 +36,29 @@ export default function GroceryList() {
     await api.deleteGroceryItem(pending.item.id);
   }
 
-  async function handleAdd(e) {
-    e.preventDefault();
-    const name = draft.trim();
-    if (!name) return;
+  async function addNames(names) {
+    const valid = names.map((s) => s.trim()).filter(Boolean);
+    if (!valid.length) return;
     setAdding(true);
     try {
-      const added = await api.addGroceryItems([{ name }]);
+      const added = await api.addGroceryItems(valid.map((name) => ({ name })));
       setItems((prev) => [...added, ...prev]);
       setDraft('');
     } finally {
       setAdding(false);
     }
+  }
+
+  async function handleAdd(e) {
+    e.preventDefault();
+    addNames(draft.split(/[,\n]/));
+  }
+
+  function handlePaste(e) {
+    const text = e.clipboardData.getData('text');
+    if (!text.includes(',') && !text.includes('\n')) return;
+    e.preventDefault();
+    addNames(text.split(/[,\n]/));
   }
 
   async function handleToggle(id) {
@@ -137,6 +148,7 @@ export default function GroceryList() {
             className="grocery-add-input"
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
+            onPaste={handlePaste}
             placeholder="Add item…"
             disabled={adding}
           />
