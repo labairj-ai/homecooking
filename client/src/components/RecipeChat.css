@@ -152,6 +152,30 @@
   50% { opacity: 0; }
 }
 
+.chat-thinking {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 0;
+}
+
+.chat-thinking span {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  animation: thinking-bounce 1.2s ease-in-out infinite;
+}
+
+.chat-thinking span:nth-child(2) { animation-delay: 0.2s; }
+.chat-thinking span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes thinking-bounce {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+  30% { transform: translateY(-5px); opacity: 1; }
+}
+
 .chat-error {
   font-size: 0.8rem;
   color: #c0392b;

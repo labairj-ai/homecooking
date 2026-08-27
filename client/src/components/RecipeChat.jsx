@@ -13,6 +13,7 @@ export default function RecipeChat({ recipe, onClose }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [streaming, setStreaming] = useState(false);
+  const [thinking, setThinking] = useState(false);
   const [error, setError] = useState(null);
   const messagesEndRef = useRef(null);
   const esRef = useRef(null);
@@ -49,6 +50,7 @@ export default function RecipeChat({ recipe, onClose }) {
     setMessages([...outgoing, { role: 'assistant', content: '' }]);
     setInput('');
     setStreaming(true);
+    setThinking(true);
     setError(null);
 
     try {
@@ -60,6 +62,7 @@ export default function RecipeChat({ recipe, onClose }) {
       es.onmessage = (e) => {
         const data = JSON.parse(e.data);
         if (data.token) {
+          setThinking(false);
           setMessages((msgs) => {
             const updated = [...msgs];
             const last = updated[updated.length - 1];
@@ -71,6 +74,7 @@ export default function RecipeChat({ recipe, onClose }) {
           es.close();
           esRef.current = null;
           setStreaming(false);
+          setThinking(false);
           if (data.error) setError('AI error: ' + data.error);
         }
       };
@@ -83,6 +87,7 @@ export default function RecipeChat({ recipe, onClose }) {
       };
     } catch (err) {
       setStreaming(false);
+      setThinking(false);
       setError(err.message);
     }
   }
@@ -122,16 +127,25 @@ export default function RecipeChat({ recipe, onClose }) {
           </div>
         ) : (
           <div className="chat-messages">
-            {messages.map((msg, i) => (
-              <div key={i} className={`chat-msg chat-msg--${msg.role}`}>
-                <span className="chat-msg-content">
-                  {msg.content}
-                  {streaming && i === messages.length - 1 && msg.role === 'assistant' && !msg.content && (
-                    <span className="chat-cursor" />
+            {messages.map((msg, i) => {
+              const isLastAssistant = i === messages.length - 1 && msg.role === 'assistant';
+              return (
+                <div key={i} className={`chat-msg chat-msg--${msg.role}`}>
+                  {isLastAssistant && thinking ? (
+                    <span className="chat-thinking">
+                      <span /><span /><span />
+                    </span>
+                  ) : (
+                    <span className="chat-msg-content">
+                      {msg.content}
+                      {streaming && isLastAssistant && msg.content && (
+                        <span className="chat-cursor" />
+                      )}
+                    </span>
                   )}
-                </span>
-              </div>
-            ))}
+                </div>
+              );
+            })}
             {error && <div className="chat-error">{error}</div>}
             <div ref={messagesEndRef} />
           </div>
