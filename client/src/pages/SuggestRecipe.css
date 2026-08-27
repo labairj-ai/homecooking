@@ -40,50 +40,6 @@
   min-width: 60px;
 }
 
-/* Model toggle — segmented control */
-.model-toggle {
-  display: flex;
-  border: 1.5px solid var(--border);
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-.model-toggle-btn {
-  padding: 0.35rem 1rem;
-  font-size: 0.82rem;
-  font-weight: 500;
-  color: var(--text-muted);
-  background: var(--surface);
-  border: none;
-  cursor: pointer;
-  transition: all 0.15s;
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-}
-.model-toggle-btn + .model-toggle-btn {
-  border-left: 1.5px solid var(--border);
-}
-.model-toggle-btn.active {
-  background: var(--accent);
-  color: #fff;
-  font-weight: 600;
-}
-.model-toggle-btn:not(.active):hover { background: var(--surface2); color: var(--text); }
-.model-toggle-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-
-.model-toggle-sub {
-  font-size: 0.68rem;
-  opacity: 0.75;
-  font-family: 'Courier New', monospace;
-}
-
-.model-toggle-note {
-  font-size: 0.75rem;
-  color: var(--text-muted);
-  opacity: 0.65;
-}
-
 /* Cook time chips — small, reuse .filter-tab */
 .cooktime-tabs {
   display: flex;

@@ -16,11 +16,6 @@ const COOK_TIMES = [
   { label: '1+ hour', value: '1+ hour' },
 ];
 
-const MODELS = [
-  { label: '⚡ Fast', sub: 'qwen2.5:14b', value: 'qwen2.5:14b' },
-  { label: '✦ Best', sub: 'phi4:14b', value: 'phi4:14b' },
-];
-
 export default function SuggestRecipe() {
   const navigate = useNavigate();
 
@@ -30,7 +25,6 @@ export default function SuggestRecipe() {
 
   // Options
   const [cookTime, setCookTime] = useState('');
-  const [model, setModel] = useState('phi4:14b');
 
   // State machine: idle | concepts-loading | concepts | streaming | done | error
   const [state, setState] = useState('idle');
@@ -73,7 +67,7 @@ export default function SuggestRecipe() {
       for (let attempt = 0; attempt < 3; attempt++) {
         try {
           if (attempt > 0) await sleep(1500 * attempt);
-          result = await api.suggestConcepts(ingredients, type, model, cookTime);
+          result = await api.suggestConcepts(ingredients, type, cookTime);
           break;
         } catch (e) {
           lastErr = e;
@@ -116,7 +110,7 @@ export default function SuggestRecipe() {
         for (let p = 0; p < 3; p++) {
           try {
             if (p > 0) await sleep(1500 * p);
-            jobData = await api.suggestRecipe(ingredients, type, model, cookTime, concept);
+            jobData = await api.suggestRecipe(ingredients, type, cookTime, concept);
             break;
           } catch (e) {
             lastErr = e;
@@ -246,27 +240,8 @@ export default function SuggestRecipe() {
         </p>
       </div>
 
-      {/* Options: model + cook time — always visible */}
+      {/* Options: cook time */}
       <div className="suggest-options">
-        <div className="suggest-option-row">
-          <span className="suggest-option-label">Model</span>
-          <div className="model-toggle">
-            {MODELS.map((m) => (
-              <button
-                key={m.value}
-                className={`model-toggle-btn${model === m.value ? ' active' : ''}`}
-                onClick={() => setModel(m.value)}
-                disabled={busy}
-              >
-                {m.label} <span className="model-toggle-sub">{m.sub}</span>
-              </button>
-            ))}
-          </div>
-          <span className="model-toggle-note">
-            {model === 'qwen2.5:14b' ? '~1–2 min' : '2–5 min'}
-          </span>
-        </div>
-
         <div className="suggest-option-row">
           <span className="suggest-option-label">Cook time</span>
           <div className="cooktime-tabs">
@@ -337,7 +312,7 @@ export default function SuggestRecipe() {
           <div className="suggest-stream-header">
             <div className="suggest-spinner" />
             <span className="suggest-stream-label">
-              Finding {typeLabel} ideas with {model}…
+              Finding {typeLabel} ideas…
             </span>
           </div>
           <p className="suggest-model-note">Generating 3 concepts to choose from</p>
@@ -373,7 +348,7 @@ export default function SuggestRecipe() {
         <div className="suggest-stream-box">
           <div className="suggest-stream-header">
             <div className="suggest-spinner" />
-            <span className="suggest-stream-label">phi4 is crafting your recipe…</span>
+            <span className="suggest-stream-label">Generating your {typeLabel}…</span>
             <button className="suggest-stop-btn" onClick={handleStop}>
               🔄 Try Another
             </button>
@@ -384,7 +359,7 @@ export default function SuggestRecipe() {
               <span className="suggest-cursor" />
             </pre>
           )}
-          <p className="suggest-model-note">{model} · {model === 'qwen2.5:14b' ? '~1–2 min' : '2–5 min'}</p>
+          <p className="suggest-model-note">~2–4 min</p>
           <div ref={streamEndRef} />
         </div>
       )}

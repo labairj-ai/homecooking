@@ -85,18 +85,18 @@ export const api = {
   parseRecipeJob: (jobId) =>
     fetch(`${BASE}/parse-recipe/job/${jobId}`).then(json),
 
-  suggestRecipe: (ingredients, type, model, cookTime, concept) =>
+  suggestRecipe: (ingredients, type, cookTime, concept) =>
     fetch(`${BASE}/suggest-recipe`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ingredients, type, model, cookTime, concept }),
+      body: JSON.stringify({ ingredients, type, cookTime, concept }),
     }).then(json),
 
-  suggestConcepts: (ingredients, type, model, cookTime) =>
+  suggestConcepts: (ingredients, type, cookTime) =>
     fetch(`${BASE}/suggest-recipe/concepts`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ingredients, type, model, cookTime }),
+      body: JSON.stringify({ ingredients, type, cookTime }),
     }).then(json),
 
   startChat: (id, messages) =>
