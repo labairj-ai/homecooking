@@ -65,7 +65,7 @@ async function runChat(jobId, systemPrompt, userMessages) {
         messages,
         stream: true,
         temperature: 0.4,
-        max_tokens: 2000,
+        max_tokens: 8000,
         enable_thinking: false,
       }),
       signal: AbortSignal.timeout(120_000),
