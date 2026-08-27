@@ -31,9 +31,13 @@ function safeModel(_m) {
   return LLM_MODEL;
 }
 
+function stripThinking(text) {
+  return text.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
+}
+
 // 4-strategy JSON extractor: handles preamble text, truncated output, unclosed brackets
 function extractJson(text) {
-  const s = text.trim();
+  const s = stripThinking(text);
   try { return JSON.parse(s); } catch (_) {}
 
   const match = s.match(/\{[\s\S]*\}/);
@@ -233,7 +237,8 @@ Make the 3 concepts meaningfully different from each other in style, technique, 
     if (!llmRes.ok) throw new Error(`LLM returned HTTP ${llmRes.status}`);
 
     const json = await llmRes.json();
-    const text = (json.choices?.[0]?.message?.content || '').trim();
+    const raw = (json.choices?.[0]?.message?.content || '').trim();
+    const text = stripThinking(raw);
 
     let parsed;
     try { parsed = JSON.parse(text); }
