@@ -36,39 +36,47 @@ function stripThinking(text) {
   return text.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
 }
 
-// Extracts the first complete JSON object using brace-depth matching,
-// then falls back to repair for truncated output.
+// Extracts the recipe JSON from model output, which may include thinking preamble.
+// Collects ALL complete {…} objects via brace-depth matching, sorts by length
+// descending, and returns the largest parseable one — the recipe is always
+// the biggest object. Falls back to repairing the largest candidate if truncated.
 function extractJson(text) {
   const s = stripThinking(text);
   try { return JSON.parse(s); } catch (_) {}
 
-  const start = s.indexOf('{');
-  if (start === -1) throw new Error('No JSON object found in model output');
-
-  // Walk from the first { counting depth to find the matching }
-  let depth = 0, inString = false, escape = false, end = -1;
-  for (let i = start; i < s.length; i++) {
-    const c = s[i];
-    if (escape)              { escape = false; continue; }
-    if (c === '\\' && inString) { escape = true; continue; }
-    if (c === '"')           { inString = !inString; continue; }
-    if (inString)            continue;
-    if (c === '{')           depth++;
-    if (c === '}' && --depth === 0) { end = i; break; }
+  // Collect every complete {…} block
+  const candidates = [];
+  for (let i = 0; i < s.length; i++) {
+    if (s[i] !== '{') continue;
+    let depth = 0, inStr = false, esc = false, end = -1;
+    for (let j = i; j < s.length; j++) {
+      const c = s[j];
+      if (esc)               { esc = false; continue; }
+      if (c === '\\' && inStr) { esc = true; continue; }
+      if (c === '"')         { inStr = !inStr; continue; }
+      if (inStr)             continue;
+      if (c === '{')         depth++;
+      if (c === '}' && --depth === 0) { end = j; break; }
+    }
+    if (end !== -1) candidates.push(s.slice(i, end + 1));
   }
 
-  if (end !== -1) {
-    try { return JSON.parse(s.slice(start, end + 1)); } catch (_) {}
+  // Largest parseable candidate is the recipe (not a tiny thinking fragment)
+  candidates.sort((a, b) => b.length - a.length);
+  for (const block of candidates) {
+    try { return JSON.parse(block); } catch (_) {}
   }
 
-  // Truncated output — attempt repair
-  let block = s.slice(start);
-  if ((block.match(/"/g) || []).length % 2 !== 0) block += '"';
-  const openArrays = (block.match(/\[/g) || []).length - (block.match(/\]/g) || []).length;
-  const openBraces = (block.match(/\{/g) || []).length - (block.match(/\}/g) || []).length;
-  for (let i = 0; i < openArrays; i++) block += ']';
-  for (let i = 0; i < openBraces;  i++) block += '}';
-  try { return JSON.parse(block); } catch (_) {}
+  // Repair the largest candidate (truncated output)
+  if (candidates.length > 0) {
+    let block = candidates[0];
+    if ((block.match(/"/g) || []).length % 2 !== 0) block += '"';
+    const openArrays = (block.match(/\[/g) || []).length - (block.match(/\]/g) || []).length;
+    const openBraces = (block.match(/\{/g) || []).length - (block.match(/\}/g) || []).length;
+    for (let i = 0; i < openArrays; i++) block += ']';
+    for (let i = 0; i < openBraces;  i++) block += '}';
+    try { return JSON.parse(block); } catch (_) {}
+  }
 
   throw new Error('Could not parse model output as JSON after repair attempts');
 }
@@ -137,7 +145,8 @@ async function runJob(jobId, ingredients, type, cookTime, model, concept) {
 
     if (!llmRes.ok) throw new Error(`LLM returned HTTP ${llmRes.status}`);
 
-    let accumulated = '';
+    let contentAccum = '';
+    let reasoningAccum = '';
     let done = false;
     const reader = llmRes.body.getReader();
     const decoder = new TextDecoder();
@@ -155,17 +164,19 @@ async function runJob(jobId, ingredients, type, cookTime, model, concept) {
         if (!trimmed.startsWith('data: ')) continue;
         try {
           const chunk = JSON.parse(trimmed.slice(6));
-          const token = chunk.choices?.[0]?.delta?.content || '';
-          if (token) {
-            accumulated += token;
-            job.tokens.push(token);
-          }
+          const delta = chunk.choices?.[0]?.delta || {};
+          const contentToken = delta.content || '';
+          const reasoningToken = delta.reasoning || '';
+          // Stream both for display; track separately for parsing
+          if (reasoningToken) { reasoningAccum += reasoningToken; job.tokens.push(reasoningToken); }
+          if (contentToken)   { contentAccum   += contentToken;   job.tokens.push(contentToken); }
           if (chunk.choices?.[0]?.finish_reason) { done = true; break; }
         } catch (_) {}
       }
     }
 
-    const recipe = extractJson(accumulated);
+    // Prefer content tokens for parsing; fall back to reasoning (Qwen3 thinking mode)
+    const recipe = extractJson(contentAccum || reasoningAccum);
     updateJob(jobId, { status: 'done', result: recipe });
   } catch (err) {
     updateJob(jobId, { status: 'error', error: err.message });
