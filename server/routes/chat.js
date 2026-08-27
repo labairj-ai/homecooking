@@ -40,6 +40,7 @@ function buildSystemPrompt(recipe) {
   lines.push(
     '',
     'Answer questions about this recipe. Suggest substitutions, explain techniques, diagnose cooking problems the user describes, and recommend specific improvements (e.g. "reduce salt by ¼ tsp", "bake 5 extra minutes at the same temp"). Be concise and practical.',
+    'IMPORTANT: When discussing specific brands, products, or their origins, only state facts you are certain of. If you are unsure about a specific product\'s ingredients, producer, or characteristics, say so clearly ("I\'m not certain about that specific product") rather than guessing.',
   );
 
   return lines.join('\n');
