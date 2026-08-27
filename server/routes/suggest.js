@@ -3,7 +3,7 @@ const express = require('express');
 const router = express.Router();
 
 const LLM_URL   = process.env.LLM_URL   || 'http://localhost:8080';
-const LLM_MODEL = 'mlx-community/phi-4-4bit';
+const LLM_MODEL = 'mlx-community/Qwen3.6-35B-A3B-4bit';
 const NUM_PREDICT   = 2500;
 const MODEL_TIMEOUT = 180_000;
 

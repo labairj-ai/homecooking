@@ -4,7 +4,7 @@ const db = require('../db');
 const router = express.Router({ mergeParams: true });
 
 const LLM_URL   = process.env.LLM_URL   || 'http://localhost:8080';
-const CHAT_MODEL = 'mlx-community/phi-4-4bit';
+const CHAT_MODEL = 'mlx-community/Qwen3.6-35B-A3B-4bit';
 
 // In-memory job store; entries expire after 15 minutes
 const _jobs = new Map();
