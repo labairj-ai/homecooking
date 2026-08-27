@@ -2,8 +2,9 @@ const express = require('express');
 
 const router = express.Router();
 
-const LLM_URL   = process.env.LLM_URL   || 'http://localhost:8080';
-const LLM_MODEL = 'mlx-community/Qwen3.6-35B-A3B-4bit';
+const LLM_URL        = process.env.LLM_URL || 'http://localhost:8080';
+const LLM_MODEL      = 'mlx-community/Qwen3.6-35B-A3B-4bit';
+const CONCEPTS_MODEL = 'mlx-community/phi-4-4bit';
 const NUM_PREDICT   = 2500;
 const MODEL_TIMEOUT = 180_000;
 
@@ -35,25 +36,40 @@ function stripThinking(text) {
   return text.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
 }
 
-// 4-strategy JSON extractor: handles preamble text, truncated output, unclosed brackets
+// Extracts the first complete JSON object using brace-depth matching,
+// then falls back to repair for truncated output.
 function extractJson(text) {
   const s = stripThinking(text);
   try { return JSON.parse(s); } catch (_) {}
 
-  const match = s.match(/\{[\s\S]*\}/);
-  if (!match) throw new Error('No JSON object found in model output');
-  let block = match[0];
+  const start = s.indexOf('{');
+  if (start === -1) throw new Error('No JSON object found in model output');
 
-  try { return JSON.parse(block); } catch (_) {}
+  // Walk from the first { counting depth to find the matching }
+  let depth = 0, inString = false, escape = false, end = -1;
+  for (let i = start; i < s.length; i++) {
+    const c = s[i];
+    if (escape)              { escape = false; continue; }
+    if (c === '\\' && inString) { escape = true; continue; }
+    if (c === '"')           { inString = !inString; continue; }
+    if (inString)            continue;
+    if (c === '{')           depth++;
+    if (c === '}' && --depth === 0) { end = i; break; }
+  }
 
-  // Repair truncated JSON: close open string, then arrays, then objects
+  if (end !== -1) {
+    try { return JSON.parse(s.slice(start, end + 1)); } catch (_) {}
+  }
+
+  // Truncated output — attempt repair
+  let block = s.slice(start);
   if ((block.match(/"/g) || []).length % 2 !== 0) block += '"';
-  const openArrays  = (block.match(/\[/g) || []).length - (block.match(/\]/g) || []).length;
-  const openBraces  = (block.match(/\{/g) || []).length - (block.match(/\}/g) || []).length;
+  const openArrays = (block.match(/\[/g) || []).length - (block.match(/\]/g) || []).length;
+  const openBraces = (block.match(/\{/g) || []).length - (block.match(/\}/g) || []).length;
   for (let i = 0; i < openArrays; i++) block += ']';
   for (let i = 0; i < openBraces;  i++) block += '}';
-
   try { return JSON.parse(block); } catch (_) {}
+
   throw new Error('Could not parse model output as JSON after repair attempts');
 }
 
@@ -225,11 +241,11 @@ Make the 3 concepts meaningfully different from each other in style, technique, 
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: safeModel(reqModel),
+        model: CONCEPTS_MODEL,
         messages: [{ role: 'user', content: prompt }],
         stream: false,
         temperature: 0.65,
-        max_tokens: 350,
+        max_tokens: 600,
       }),
       signal: AbortSignal.timeout(180_000),
     });
@@ -237,16 +253,13 @@ Make the 3 concepts meaningfully different from each other in style, technique, 
     if (!llmRes.ok) throw new Error(`LLM returned HTTP ${llmRes.status}`);
 
     const json = await llmRes.json();
-    const raw = (json.choices?.[0]?.message?.content || '').trim();
+    const msg = json.choices?.[0]?.message || {};
+    const raw = (msg.content || '').trim();
     const text = stripThinking(raw);
 
     let parsed;
-    try { parsed = JSON.parse(text); }
-    catch {
-      const m2 = text.match(/\{[\s\S]*\}/);
-      if (m2) parsed = JSON.parse(m2[0]);
-      else throw new Error('Model response was not valid JSON');
-    }
+    try { parsed = extractJson(text); }
+    catch { throw new Error('Model response was not valid JSON'); }
 
     // Support both {concepts:[]} and bare [] responses
     const concepts = Array.isArray(parsed) ? parsed : parsed.concepts;
