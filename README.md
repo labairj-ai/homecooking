@@ -11,20 +11,20 @@ Personal recipe and drink manager split into two siloed sections: **My Kitchen**
 - **Ingredients** — amounts, units (including time units: sec/min/hr), and names with optional **Flow step labels**; rows are reorderable via drag-and-drop (desktop mouse and mobile touch)
 - **Flow Table view** — toggle on any recipe detail page to see a matrix layout: ingredients as rows, cooking steps as columns, with merged cells showing which ingredients combine at each step. Step labels are case-insensitive and deduplicated; the step field offers a datalist dropdown of existing steps to prevent naming drift.
 - **Cook Mode** — full-screen step-by-step overlay with Wake Lock (keeps screen on)
-- **Grocery List** — add all ingredients from any recipe with one tap; manual add; checkbox/clear; swipe-delete with 5-second undo toast
-- **Quick Capture** — import recipes from a URL, scanned photo (via `qwen2.5-vl:7b` vision AI), or PDF
-- **Ask AI** — recipe-aware chat panel on every recipe detail page; ask substitution questions, describe what went wrong, or get specific improvement suggestions; powered by `llama3.3:70b` with the recipe's ingredients and instructions injected as context; streaming tokens appear in real time; chat is ephemeral (resets on close)
+- **Grocery List** — add all ingredients from any recipe with one tap; manual add; paste a comma- or newline-separated list to create multiple items at once; checkbox/clear; swipe-delete with 5-second undo toast
+- **Quick Capture** — import recipes from a URL, scanned photo (via `qwen2.5-vl:7b` vision AI on Ollama), or PDF
+- **Ask AI** — recipe-aware chat panel on every recipe detail page; ask substitution questions, describe what went wrong, or get specific improvement suggestions; powered by `Qwen3.6-35B-A3B-4bit` (MLX) with the recipe's ingredients and instructions injected as context; animated thinking indicator while waiting for the first token, then streaming tokens appear in real time with a trailing cursor; chat is ephemeral (resets on close)
 
 ### ✨ What Can I Make? (`/suggest`)
-Enter ingredients you have on hand, pick your options, and a local LLM generates recipe ideas.
+Enter ingredients you have on hand and a local LLM generates recipe ideas.
 
-- **Concept picker** — clicking Food or Cocktail first generates 3 short title+tagline ideas to choose from; pick the one that sounds right before committing to the full generation
-- **Real-time streaming** — tokens appear as the model generates them in a live text panel with a blinking cursor
-- **Model** — `llama3.3:70b` via Ollama (runs on a dedicated always-on Apple Silicon machine)
+- **Concept picker** — clicking Food or Cocktail first generates 3 short title+tagline ideas via `phi-4-4bit`; pick the one that sounds right before committing to the full generation
+- **Real-time streaming** — tokens appear as the model generates them in a live text panel with a blinking cursor (includes Qwen3 reasoning tokens so you see activity throughout)
+- **Models** — `phi-4-4bit` (MLX) for fast concept suggestions; `Qwen3.6-35B-A3B-4bit` (MLX) for full recipe generation; both run on a dedicated always-on Apple Silicon machine
 - **Cook time constraint** — pill chips (Any / < 30 min / 30–60 min / 1+ hour) added to the prompt as a soft constraint
 - **Try Another** — during streaming goes back to the concept cards to pick a different idea; New Concepts fetches a fresh set of 3
 - **Save to My Kitchen / Try It** — one-click save goes live immediately, or stage it in the Try It queue to test first
-- **Resilient generation** — 4-strategy JSON repair recovers truncated model output; 90-second SSE watchdog prevents silent hangs; auto-retry once on stream error; model-aware timeouts (phi4: 10 min, qwen: 3 min); 3-retry POST with backoff for job start
+- **Resilient generation** — collects all candidate JSON objects and picks the largest (handles Qwen3 thinking preamble); truncated output repair; 90-second SSE watchdog prevents silent hangs; auto-retry once on stream error; 3-retry POST with backoff for job start
 
 ### My Cellar (`/cellar`)
 - **Wine, Beer & Spirits** — bottle/drink entries with subcategory filters
@@ -43,7 +43,8 @@ Enter ingredients you have on hand, pick your options, and a local LLM generates
 - **Frontend**: React 18 + React Router + Vite
 - **Backend**: Express.js + better-sqlite3
 - **Image uploads**: Multer (stored in `/uploads/`, 20 MB max)
-- **AI**: [Ollama](https://ollama.com) — `llama3.3:70b` for recipe generation and chat, `qwen2.5-vl:7b` for image parsing. The server reads `OLLAMA_URL` from the environment (default `http://localhost:11434`); in production the systemd unit points this to a dedicated always-on machine (Mac Studio M1 Max 64 GB over Tailscale)
+- **AI — recipe generation & chat**: MLX OpenAI-compatible server (`mlx-community/Qwen3.6-35B-A3B-4bit` for recipe generation and Ask AI chat; `mlx-community/phi-4-4bit` for concept suggestions). The server reads `LLM_URL` from the environment (default `http://localhost:8080`); in production the systemd unit points this to a dedicated always-on Apple Silicon machine over Tailscale.
+- **AI — image parsing**: [Ollama](https://ollama.com) — `qwen2.5-vl:7b` for photo Quick Capture. The server reads `OLLAMA_URL` from the environment (default `http://localhost:11434`).
 
 ## Dev setup
 
@@ -54,7 +55,9 @@ npm run dev
 
 Runs the Express server and Vite dev server concurrently. App opens on the port shown in the terminal.
 
-AI features (`/suggest`, photo Quick Capture) require Ollama running with `llama3.3:70b` and `qwen2.5-vl:7b` pulled. In dev, Ollama defaults to `localhost:11434`; set `OLLAMA_URL` in the environment to point elsewhere.
+AI features require:
+- **Recipe generation & Ask AI** (`/suggest`, recipe chat): MLX server running `Qwen3.6-35B-A3B-4bit` and `phi-4-4bit`. Set `LLM_URL` to point to it (default `http://localhost:8080`).
+- **Photo Quick Capture**: Ollama running with `qwen2.5-vl:7b` pulled. Set `OLLAMA_URL` if not on localhost (default `http://localhost:11434`).
 
 ## Deploy
 
