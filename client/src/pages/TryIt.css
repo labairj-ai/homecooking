@@ -52,6 +52,34 @@
   font-size: 0.85rem;
 }
 
+.tryit-import-pdf-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.6rem;
+}
+
+.tryit-pdf-btn {
+  padding: 0.45rem 1rem;
+  border-radius: 8px;
+  border: 1.5px solid var(--border);
+  background: var(--surface2);
+  color: var(--text);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s;
+  user-select: none;
+}
+.tryit-pdf-btn:hover { border-color: var(--accent); color: var(--accent); }
+.tryit-pdf-btn--loading { opacity: 0.6; cursor: not-allowed; pointer-events: none; }
+
+.tryit-pdf-hint {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+
 .tryit-empty {
   text-align: center;
   padding: 3rem 1rem;

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../api';
 import TypeBadge from '../components/TypeBadge';
@@ -16,6 +16,9 @@ export default function TryIt() {
   const [urlDraft, setUrlDraft] = useState('');
   const [importing, setImporting] = useState(false);
   const [importError, setImportError] = useState(null);
+  const [pdfImporting, setPdfImporting] = useState(false);
+  const [pdfImportError, setPdfImportError] = useState(null);
+  const pdfFileRef = useRef();
 
   async function load() {
     setLoading(true);
@@ -53,6 +56,38 @@ export default function TryIt() {
     } catch (e) {
       alert('Delete failed: ' + e.message);
       setDeleting(null);
+    }
+  }
+
+  async function handleImportPdf(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    setPdfImporting(true);
+    setPdfImportError(null);
+    try {
+      const result = await api.parseRecipe(file);
+      if (!result.recipe) throw new Error(result.error || 'Could not parse PDF');
+      const { recipe } = result;
+      const instructions = recipe.instructions?.length
+        ? `<ol>${recipe.instructions.map((s) => `<li>${s}</li>`).join('')}</ol>`
+        : '';
+      const saved = await api.createRecipe({
+        title: recipe.title || 'Untitled Recipe',
+        type: ['recipe', 'cocktail', 'drink'].includes(recipe.type) ? recipe.type : 'recipe',
+        description: recipe.description || '',
+        instructions,
+        notes: recipe.notes || '',
+        image_path: null,
+        is_trial: 1,
+        ingredients: (recipe.ingredients || []).filter((i) => i.name?.trim()),
+        tags: [],
+      });
+      setRecipes((prev) => [saved, ...prev]);
+    } catch (e) {
+      setPdfImportError(e.message);
+    } finally {
+      setPdfImporting(false);
+      if (pdfFileRef.current) pdfFileRef.current.value = '';
     }
   }
 
@@ -114,6 +149,25 @@ export default function TryIt() {
           </button>
         </div>
         {importError && <p className="tryit-import-error">Error: {importError}</p>}
+        <div className="tryit-import-pdf-row">
+          <label
+            htmlFor="tryit-pdf-file"
+            className={`tryit-pdf-btn${pdfImporting ? ' tryit-pdf-btn--loading' : ''}`}
+          >
+            {pdfImporting ? 'Importing PDF…' : '📄 Import PDF'}
+          </label>
+          <span className="tryit-pdf-hint">Upload a recipe PDF to parse and add to queue</span>
+          <input
+            id="tryit-pdf-file"
+            type="file"
+            accept=".pdf,application/pdf"
+            ref={pdfFileRef}
+            onChange={handleImportPdf}
+            style={{ display: 'none' }}
+            disabled={pdfImporting}
+          />
+        </div>
+        {pdfImportError && <p className="tryit-import-error">Error: {pdfImportError}</p>}
       </div>
 
       {loading && <div className="state-msg">Loading…</div>}
