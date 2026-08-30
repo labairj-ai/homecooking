@@ -95,6 +95,10 @@ function buildPrompt(ingredients, type, cookTime, concept) {
     ? `\nTarget total cook + prep time: ${cookTime}. Adjust the recipe complexity accordingly.`
     : '';
 
+  const metaFields = type === 'cocktail'
+    ? ''
+    : `\n  "servings": "4",\n  "prep_time": "10 min",\n  "cook_time": "20 min",`;
+
   return `You are a culinary expert. ${conceptIntro} these ingredients: ${ingredients.join(', ')}.${cookTimeNote}
 
 You may supplement with common pantry staples (salt, pepper, oil, butter, water, vinegar, sugar, flour, etc.).
@@ -104,10 +108,7 @@ Return ONLY a valid JSON object in this exact structure — no text outside it:
   "title": "Recipe Name",
   "description": "One or two sentence enticing description.",
   "type": "${type === 'cocktail' ? 'cocktail' : 'recipe'}",
-  "subcategory": "",
-  "servings": "4",
-  "prep_time": "10 min",
-  "cook_time": "20 min",
+  "subcategory": "",${metaFields}
   "ingredients": [
     {"amount": "2", "unit": "cups", "name": "ingredient name"},
     {"amount": "1", "unit": "tbsp", "name": "another ingredient"},

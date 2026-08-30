@@ -378,11 +378,13 @@ export default function SuggestRecipe() {
           <div className="suggest-result-header">
             <h2 className="suggest-result-title">{recipe.title}</h2>
             {recipe.description && <p className="suggest-result-desc">{recipe.description}</p>}
-            <div className="suggest-result-meta">
-              {recipe.servings && <span>Serves {recipe.servings}</span>}
-              {recipe.prep_time && <span>Prep {recipe.prep_time}</span>}
-              {recipe.cook_time && <span>Cook {recipe.cook_time}</span>}
-            </div>
+            {recipe.type !== 'cocktail' && (recipe.servings || recipe.prep_time || recipe.cook_time) && (
+              <div className="suggest-result-meta">
+                {recipe.servings && <span>Serves {recipe.servings}</span>}
+                {recipe.prep_time && <span>Prep {recipe.prep_time}</span>}
+                {recipe.cook_time && <span>Cook {recipe.cook_time}</span>}
+              </div>
+            )}
           </div>
 
           {recipe.ingredients?.length > 0 && (
