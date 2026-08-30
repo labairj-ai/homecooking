@@ -87,10 +87,6 @@ function buildPrompt(ingredients, type, cookTime, concept) {
     ? 'Set subcategory to empty string "".'
     : 'Set subcategory to one of: breakfast, lunch, dinner, dessert.';
 
-  const conceptIntro = concept
-    ? `Create a ${label} called "${concept.title}" — ${concept.tagline} — using`
-    : `Create a ${label} using some or all of`;
-
   const cookTimeNote = cookTime
     ? `\nTarget total cook + prep time: ${cookTime}. Adjust the recipe complexity accordingly.`
     : '';
@@ -99,9 +95,23 @@ function buildPrompt(ingredients, type, cookTime, concept) {
     ? ''
     : `\n  "servings": "4",\n  "prep_time": "10 min",\n  "cook_time": "20 min",`;
 
-  return `You are a culinary expert. ${conceptIntro} these ingredients: ${ingredients.join(', ')}.${cookTimeNote}
+  let intro;
+  if (type === 'cocktail') {
+    intro = concept
+      ? `Create a cocktail called "${concept.title}" — ${concept.tagline}. Choose 2–4 of these available ingredients that work harmoniously together`
+      : `Create a well-balanced cocktail. From this list of available ingredients, choose only the 2–4 that work best together — do NOT use them all`;
+  } else {
+    intro = concept
+      ? `Create a food recipe called "${concept.title}" — ${concept.tagline} — using`
+      : `Create a food recipe using some of`;
+  }
 
-You may supplement with common pantry staples (salt, pepper, oil, butter, water, vinegar, sugar, flour, etc.).
+  const cocktailNote = type === 'cocktail'
+    ? '\nA good cocktail uses a focused set of complementary spirits and mixers. Ignore ingredients that would clash or muddy the flavor. You may add common bar staples (simple syrup, soda water, ice, citrus, salt rim, etc.).'
+    : '\nYou may supplement with common pantry staples (salt, pepper, oil, butter, water, vinegar, sugar, flour, etc.).';
+
+  return `You are a culinary expert. ${intro} these ingredients: ${ingredients.join(', ')}.${cookTimeNote}
+${cocktailNote}
 
 Return ONLY a valid JSON object in this exact structure — no text outside it:
 {
@@ -236,8 +246,12 @@ router.post('/concepts', async (req, res) => {
   const label = type === 'cocktail' ? 'cocktail' : 'food recipe';
   const cookTimeNote = cookTime ? `Preference: ${cookTime} total time.\n` : '';
 
-  const prompt = `You are a culinary expert. Suggest 3 distinct ${label} concepts using some of these ingredients: ${ingredients.join(', ')}.
-${cookTimeNote}
+  const cocktailConceptNote = type === 'cocktail'
+    ? `Each concept should use only 2–4 of these ingredients that complement each other well — do NOT combine them all. Each concept should highlight a different spirit or flavor pairing from the list.\n`
+    : '';
+
+  const prompt = `You are a culinary expert. Suggest 3 distinct ${label} concepts using some of these available ingredients: ${ingredients.join(', ')}.
+${cookTimeNote}${cocktailConceptNote}
 Return ONLY a JSON object in this exact structure — no text outside:
 {
   "concepts": [
