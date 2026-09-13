@@ -118,3 +118,8 @@ label { font-size: 0.85rem; font-weight: 600; color: var(--text-muted); display:
   height: 32px;
 }
 .btn-icon:hover { background: var(--surface2); color: var(--text); }
+
+@media print {
+  .nav, .nav-mobile-bottom { display: none !important; }
+  body { padding-bottom: 0 !important; }
+}

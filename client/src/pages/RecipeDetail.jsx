@@ -48,6 +48,10 @@ export default function RecipeDetail() {
     setTimeout(() => setAddedToList(false), 3000);
   }, [recipe]);
 
+  function handleDownloadPdf() {
+    window.print();
+  }
+
   async function handleShare() {
     const url = window.location.href;
     if (navigator.share) {
@@ -141,6 +145,13 @@ export default function RecipeDetail() {
               title="Ask AI about this recipe"
             >
               {chatOpen ? '✕ Close AI' : '✦ Ask AI'}
+            </button>
+            <button
+              className="btn-pdf"
+              onClick={handleDownloadPdf}
+              title="Download as PDF"
+            >
+              ↓ PDF
             </button>
             <button
               className={`btn-share${shared ? ' btn-share--done' : ''}`}
