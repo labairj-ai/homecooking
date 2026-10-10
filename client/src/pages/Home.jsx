@@ -78,12 +78,11 @@ export default function Home() {
     try {
       const result = await api.reorderRecipe(id, direction);
       if (!result.ok) return;
+      const sortMap = new Map(result.updates.map((u) => [u.id, u.sort_order]));
       setRecipes((prev) => {
-        const updated = prev.map((r) => {
-          if (r.id === result.id) return { ...r, sort_order: result.sort_order };
-          if (r.id === result.neighbor_id) return { ...r, sort_order: result.neighbor_sort_order };
-          return r;
-        });
+        const updated = prev.map((r) =>
+          sortMap.has(r.id) ? { ...r, sort_order: sortMap.get(r.id) } : r
+        );
         return [...updated].sort((a, b) =>
           b.sort_order !== a.sort_order
             ? b.sort_order - a.sort_order

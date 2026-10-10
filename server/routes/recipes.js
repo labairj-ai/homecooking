@@ -192,30 +192,35 @@ router.patch('/:id/reorder', (req, res) => {
 
   if (swapIdx < 0 || swapIdx >= group.length) return res.json({ ok: true });
 
+  // Normalize: assign unique descending sort_orders if any two items share the same value.
+  // Without this, bumping a tied item by +1 skips it past ALL tied items, not just one.
+  const hasTies = group.some((r, i) => i > 0 && r.sort_order === group[i - 1].sort_order);
+  if (hasTies) {
+    const stmt = db.prepare(`UPDATE recipes SET sort_order=? WHERE id=?`);
+    db.transaction(() => {
+      group.forEach((r, i) => {
+        r.sort_order = group.length - 1 - i;
+        stmt.run(r.sort_order, r.id);
+      });
+    })();
+  }
+
+  // Swap the two adjacent items
   const curr = group[idx];
   const neighbor = group[swapIdx];
-
-  let newCurrOrder, newNeighborOrder;
-  if (curr.sort_order === neighbor.sort_order) {
-    // Equal orders: bump the one that needs to go higher
-    if (direction === 'up') {
-      newCurrOrder = curr.sort_order + 1;
-      newNeighborOrder = neighbor.sort_order;
-    } else {
-      newCurrOrder = curr.sort_order;
-      newNeighborOrder = neighbor.sort_order + 1;
-    }
-  } else {
-    newCurrOrder = neighbor.sort_order;
-    newNeighborOrder = curr.sort_order;
-  }
+  const newCurrOrder = neighbor.sort_order;
+  const newNeighborOrder = curr.sort_order;
 
   db.transaction(() => {
     db.prepare(`UPDATE recipes SET sort_order=?, updated_at=datetime('now') WHERE id=?`).run(newCurrOrder, curr.id);
     db.prepare(`UPDATE recipes SET sort_order=?, updated_at=datetime('now') WHERE id=?`).run(newNeighborOrder, neighbor.id);
   })();
 
-  res.json({ ok: true, id: curr.id, sort_order: newCurrOrder, neighbor_id: neighbor.id, neighbor_sort_order: newNeighborOrder });
+  // Return the full group's updated sort_orders so the client stays in sync
+  // after normalization potentially changed every item in the group.
+  group[idx].sort_order = newCurrOrder;
+  group[swapIdx].sort_order = newNeighborOrder;
+  res.json({ ok: true, updates: group.map((r) => ({ id: r.id, sort_order: r.sort_order })) });
 });
 
 // DELETE /api/recipes/:id
