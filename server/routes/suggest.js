@@ -5,7 +5,7 @@ const router = express.Router();
 const LLM_URL        = process.env.LLM_URL || 'http://localhost:8080';
 const LLM_MODEL      = 'mlx-community/Qwen3.6-35B-A3B-4bit';
 const CONCEPTS_MODEL = 'mlx-community/phi-4-4bit';
-const NUM_PREDICT   = 2500;
+const NUM_PREDICT   = 6000;
 const MODEL_TIMEOUT = 180_000;
 
 // In-memory job store; entries expire after 15 minutes
@@ -186,7 +186,11 @@ async function runJob(jobId, ingredients, type, cookTime, model, concept) {
       }
     }
 
-    // Prefer content tokens for parsing; fall back to reasoning (Qwen3 thinking mode)
+    // contentAccum holds the recipe JSON; reasoningAccum holds <think> tokens.
+    // If contentAccum is empty the model ran out of tokens before generating output.
+    if (!contentAccum.trim() && reasoningAccum.trim()) {
+      throw new Error('The model spent too long thinking and ran out of room to write the recipe. Try again — it may succeed on a second attempt.');
+    }
     const recipe = extractJson(contentAccum || reasoningAccum);
     updateJob(jobId, { status: 'done', result: recipe });
   } catch (err) {
