@@ -23,6 +23,9 @@ rsync -az \
 echo "==> Installing server deps on optiplex..."
 ssh ${REMOTE} "cd ${REMOTE_DIR} && npm install --workspace=server --omit=dev"
 
+echo "==> Installing Playwright browser (first run may take a minute)..."
+ssh ${REMOTE} "cd ${REMOTE_DIR}/server && npx playwright install chromium 2>&1 | tail -3" || true
+
 echo "==> Restarting service..."
 ssh ${REMOTE} "sudo systemctl restart homecooking"
 

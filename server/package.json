@@ -14,6 +14,7 @@
     "express": "^4.19.2",
     "multer": "^1.4.5-lts.1",
     "pdf-parse": "^1.1.1",
+    "playwright": "^1.48.0",
     "tesseract.js": "^7.0.0"
   }
 }
