@@ -1,0 +1,67 @@
+/* Cocktail try-it queue section */
+.cellar-queue-section {
+  margin-bottom: 1.75rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1.5px solid var(--border);
+}
+
+.cellar-queue-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 0.25rem;
+  font-family: 'Playfair Display', serif;
+}
+
+.cellar-queue-subtitle {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  margin-bottom: 1rem;
+}
+
+/* Spirits import */
+.cellar-import-bar {
+  margin-bottom: 1rem;
+}
+
+.cellar-import-toggle {
+  font-size: 0.875rem;
+}
+
+.cellar-import-panel {
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.1rem 1.25rem;
+  margin-bottom: 1.25rem;
+  box-shadow: var(--shadow);
+}
+
+.cellar-import-label {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  margin-bottom: 0.6rem;
+}
+
+.cellar-import-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.6rem 0.8rem;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface2);
+  color: var(--text);
+  font-size: 0.9rem;
+  font-family: inherit;
+  resize: vertical;
+  margin-bottom: 0.75rem;
+}
+.cellar-import-textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.cellar-import-actions {
+  display: flex;
+  gap: 0.6rem;
+}

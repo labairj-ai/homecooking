@@ -24,7 +24,7 @@ export default function TryIt() {
     setLoading(true);
     setError(null);
     try {
-      const data = await api.listRecipes('', true);
+      const data = await api.listRecipes('recipe', true);
       setRecipes(data);
     } catch (e) {
       setError(e.message);

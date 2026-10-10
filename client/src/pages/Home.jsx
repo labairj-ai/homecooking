@@ -29,7 +29,7 @@ export default function Home() {
         searchTerms.length > 0
           ? api.searchRecipes(searchTerms.join(','))
           : api.listRecipes(filter === 'sides' || filter === 'dessert' ? 'recipe' : filter),
-        api.listRecipes('', true),
+        api.listRecipes('recipe', true),
       ]);
       setRecipes(data);
       setTrialCount(trials.length);

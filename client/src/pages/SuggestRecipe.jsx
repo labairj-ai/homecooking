@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../api';
 import './SuggestRecipe.css';
 
@@ -38,6 +38,34 @@ export default function SuggestRecipe() {
   const cancelledRef = useRef(false);
   const currentTypeRef = useRef(null);
   const streamEndRef = useRef(null);
+
+  // My Bar picker
+  const [barSpirits, setBarSpirits] = useState(null);
+  const [loadingBar, setLoadingBar] = useState(false);
+  const [showBar, setShowBar] = useState(false);
+
+  // --- My Bar ---
+  async function toggleBar() {
+    if (showBar) { setShowBar(false); return; }
+    if (barSpirits !== null) { setShowBar(true); return; }
+    setLoadingBar(true);
+    try {
+      const drinks = await api.listRecipes('drink');
+      setBarSpirits(drinks.filter((d) => d.subcategory === 'spirits'));
+      setShowBar(true);
+    } catch (_) {
+      setBarSpirits([]);
+      setShowBar(true);
+    } finally {
+      setLoadingBar(false);
+    }
+  }
+
+  function toggleBarSpirit(name) {
+    setIngredients((prev) =>
+      prev.includes(name) ? prev.filter((x) => x !== name) : [...prev, name]
+    );
+  }
 
   // --- Ingredient input ---
   function addIngredient(e) {
@@ -284,6 +312,47 @@ export default function SuggestRecipe() {
             </button>
           )}
         </div>
+
+        {/* My Bar picker */}
+        {(state === 'idle' || state === 'concepts') && (
+          <div style={{ marginTop: '0.75rem' }}>
+            <button
+              className="btn-secondary"
+              onClick={toggleBar}
+              disabled={loadingBar || busy}
+              style={{ fontSize: '0.875rem' }}
+            >
+              {loadingBar ? 'Loading…' : showBar ? '🥃 Hide My Bar' : '🥃 From My Bar'}
+            </button>
+          </div>
+        )}
+
+        {showBar && barSpirits !== null && (
+          <div className="bar-picker">
+            {barSpirits.length === 0 ? (
+              <p className="bar-picker-empty">
+                No spirits in your cellar yet.{' '}
+                <Link to="/cellar">Add some in My Cellar →</Link>
+              </p>
+            ) : (
+              <>
+                <p className="bar-picker-label">Select spirits to use as ingredients:</p>
+                <div className="bar-picker-chips">
+                  {barSpirits.map((s) => (
+                    <button
+                      key={s.id}
+                      className={`bar-spirit-chip${ingredients.includes(s.title) ? ' selected' : ''}`}
+                      onClick={() => toggleBarSpirit(s.title)}
+                      disabled={busy}
+                    >
+                      {ingredients.includes(s.title) ? '✓ ' : ''}{s.title}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+        )}
 
         {/* Main action buttons — show in idle and concepts states */}
         {(state === 'idle' || state === 'concepts') && (

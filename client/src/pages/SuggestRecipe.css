@@ -382,6 +382,60 @@
   margin-top: 0.75rem;
 }
 
+/* My Bar picker */
+.bar-picker {
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.9rem 1rem;
+  margin-top: 0.6rem;
+  box-shadow: var(--shadow);
+}
+
+.bar-picker-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  margin-bottom: 0.65rem;
+}
+
+.bar-picker-empty {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  margin: 0;
+}
+.bar-picker-empty a { color: var(--accent); }
+
+.bar-picker-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.bar-spirit-chip {
+  padding: 0.35rem 0.85rem;
+  border-radius: 20px;
+  border: 1.5px solid var(--border);
+  background: var(--surface2);
+  color: var(--text);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.13s;
+  white-space: nowrap;
+}
+.bar-spirit-chip:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.bar-spirit-chip.selected {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+.bar-spirit-chip:disabled { opacity: 0.5; cursor: not-allowed; }
+
 @media (max-width: 600px) {
   .suggest-options { padding: 0.75rem; }
   .suggest-option-row { gap: 0.5rem; }
