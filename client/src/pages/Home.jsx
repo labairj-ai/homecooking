@@ -12,6 +12,13 @@ const FILTERS = [
   { label: 'Cocktails', value: 'cocktail' },
 ];
 
+const GROUPS = [
+  { label: 'Recipes',   match: (r) => r.type === 'recipe' && r.subcategory !== 'sides' && r.subcategory !== 'dessert' },
+  { label: 'Sides',     match: (r) => r.type === 'recipe' && r.subcategory === 'sides' },
+  { label: 'Desserts',  match: (r) => r.type === 'recipe' && r.subcategory === 'dessert' },
+  { label: 'Cocktails', match: (r) => r.type === 'cocktail' },
+];
+
 export default function Home() {
   const [recipes, setRecipes] = useState([]);
   const [trialCount, setTrialCount] = useState(0);
@@ -137,13 +144,30 @@ export default function Home() {
         </div>
       )}
 
-      {!loading && !error && displayed.length > 0 && (
+      {!loading && !error && displayed.length > 0 && filter === '' && searchTerms.length === 0 ? (
+        <div className="recipe-sections">
+          {GROUPS.map((group) => {
+            const items = displayed.filter(group.match);
+            if (items.length === 0) return null;
+            return (
+              <div key={group.label} className="recipe-section">
+                <h2 className="recipe-section-title">{group.label}</h2>
+                <div className="recipe-grid">
+                  {items.map((r) => (
+                    <RecipeCard key={r.id} recipe={r} onToggleFavorite={handleToggleFavorite} />
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      ) : !loading && !error && displayed.length > 0 ? (
         <div className="recipe-grid">
           {displayed.map((r) => (
             <RecipeCard key={r.id} recipe={r} onToggleFavorite={handleToggleFavorite} />
           ))}
         </div>
-      )}
+      ) : null}
     </div>
   );
 }

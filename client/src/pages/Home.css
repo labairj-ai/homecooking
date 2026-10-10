@@ -108,6 +108,23 @@
   gap: 1.25rem;
 }
 
+.recipe-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 2.25rem;
+}
+
+.recipe-section-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  margin-bottom: 0.9rem;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid var(--border);
+}
+
 .state-msg {
   text-align: center;
   color: var(--text-muted);
