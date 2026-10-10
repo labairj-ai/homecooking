@@ -105,4 +105,9 @@ if (userVersion < 5) {
   db.pragma('user_version = 5');
 }
 
+if (userVersion < 6) {
+  db.exec(`ALTER TABLE recipes ADD COLUMN sort_order INTEGER NOT NULL DEFAULT 0`);
+  db.pragma('user_version = 6');
+}
+
 module.exports = db;

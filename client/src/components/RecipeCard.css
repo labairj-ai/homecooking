@@ -55,6 +55,44 @@
 .fav-btn:hover { background: #fff; transform: scale(1.15); }
 .fav-btn--on { color: var(--drink); }
 
+.card-reorder-btns {
+  position: absolute;
+  top: 0.5rem;
+  left: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.recipe-card:hover .card-reorder-btns {
+  opacity: 1;
+}
+.card-reorder-btn {
+  background: rgba(255,255,255,0.88);
+  border: none;
+  border-radius: 6px;
+  width: 26px;
+  height: 26px;
+  font-size: 0.65rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--text);
+  transition: background 0.12s, color 0.12s;
+  padding: 0;
+  line-height: 1;
+}
+.card-reorder-btn:hover {
+  background: #fff;
+  color: var(--accent);
+}
+
+@media (hover: none) {
+  .card-reorder-btns { opacity: 1; }
+}
+
 .card-body {
   padding: 1rem;
   flex: 1;

@@ -21,8 +21,8 @@ router.get('/', (req, res) => {
   const { type, trial } = req.query;
   const isTrial = trial === '1' ? 1 : 0;
   const rows = type
-    ? db.prepare('SELECT * FROM recipes WHERE type = ? AND is_trial = ? ORDER BY title COLLATE NOCASE').all(type, isTrial)
-    : db.prepare('SELECT * FROM recipes WHERE is_trial = ? ORDER BY title COLLATE NOCASE').all(isTrial);
+    ? db.prepare('SELECT * FROM recipes WHERE type = ? AND is_trial = ? ORDER BY sort_order DESC, title COLLATE NOCASE').all(type, isTrial)
+    : db.prepare('SELECT * FROM recipes WHERE is_trial = ? ORDER BY sort_order DESC, title COLLATE NOCASE').all(isTrial);
   res.json(rows.map(attachRelated));
 });
 
@@ -46,7 +46,7 @@ router.get('/search', (req, res) => {
       `SELECT DISTINCT r.* FROM recipes r
        JOIN ingredients i ON i.recipe_id = r.id
        WHERE r.is_trial = 0 AND ${placeholders}
-       ORDER BY r.title COLLATE NOCASE`
+       ORDER BY r.sort_order DESC, r.title COLLATE NOCASE`
     )
     .all(...params);
 
@@ -162,6 +162,60 @@ router.patch('/:id/promote', (req, res) => {
   if (!recipe) return res.status(404).json({ error: 'Not found' });
   db.prepare(`UPDATE recipes SET is_trial = 0, updated_at = datetime('now') WHERE id = ?`).run(req.params.id);
   res.json({ id: recipe.id, is_trial: 0 });
+});
+
+// PATCH /api/recipes/:id/reorder — move up or down within its section
+router.patch('/:id/reorder', (req, res) => {
+  const { direction } = req.body;
+  if (direction !== 'up' && direction !== 'down') {
+    return res.status(400).json({ error: 'direction must be up or down' });
+  }
+
+  const recipe = db.prepare('SELECT * FROM recipes WHERE id = ?').get(req.params.id);
+  if (!recipe) return res.status(404).json({ error: 'Not found' });
+
+  // Each recipe belongs to exactly one section based on type + subcategory
+  let groupSql;
+  if (recipe.type === 'cocktail') {
+    groupSql = `SELECT id, sort_order FROM recipes WHERE type='cocktail' AND is_trial=0 ORDER BY sort_order DESC, title COLLATE NOCASE`;
+  } else if (recipe.subcategory === 'sides') {
+    groupSql = `SELECT id, sort_order FROM recipes WHERE type='recipe' AND subcategory='sides' AND is_trial=0 ORDER BY sort_order DESC, title COLLATE NOCASE`;
+  } else if (recipe.subcategory === 'dessert') {
+    groupSql = `SELECT id, sort_order FROM recipes WHERE type='recipe' AND subcategory='dessert' AND is_trial=0 ORDER BY sort_order DESC, title COLLATE NOCASE`;
+  } else {
+    groupSql = `SELECT id, sort_order FROM recipes WHERE type='recipe' AND (subcategory IS NULL OR subcategory NOT IN ('sides','dessert')) AND is_trial=0 ORDER BY sort_order DESC, title COLLATE NOCASE`;
+  }
+
+  const group = db.prepare(groupSql).all();
+  const idx = group.findIndex((r) => r.id === Number(req.params.id));
+  const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
+
+  if (swapIdx < 0 || swapIdx >= group.length) return res.json({ ok: true });
+
+  const curr = group[idx];
+  const neighbor = group[swapIdx];
+
+  let newCurrOrder, newNeighborOrder;
+  if (curr.sort_order === neighbor.sort_order) {
+    // Equal orders: bump the one that needs to go higher
+    if (direction === 'up') {
+      newCurrOrder = curr.sort_order + 1;
+      newNeighborOrder = neighbor.sort_order;
+    } else {
+      newCurrOrder = curr.sort_order;
+      newNeighborOrder = neighbor.sort_order + 1;
+    }
+  } else {
+    newCurrOrder = neighbor.sort_order;
+    newNeighborOrder = curr.sort_order;
+  }
+
+  db.transaction(() => {
+    db.prepare(`UPDATE recipes SET sort_order=?, updated_at=datetime('now') WHERE id=?`).run(newCurrOrder, curr.id);
+    db.prepare(`UPDATE recipes SET sort_order=?, updated_at=datetime('now') WHERE id=?`).run(newNeighborOrder, neighbor.id);
+  })();
+
+  res.json({ ok: true, id: curr.id, sort_order: newCurrOrder, neighbor_id: neighbor.id, neighbor_sort_order: newNeighborOrder });
 });
 
 // DELETE /api/recipes/:id

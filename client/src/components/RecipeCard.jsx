@@ -4,7 +4,7 @@ import './RecipeCard.css';
 
 const PLACEHOLDERS = { cocktail: '🍸', drink: '🥂', recipe: '🍽️' };
 
-export default function RecipeCard({ recipe, onToggleFavorite }) {
+export default function RecipeCard({ recipe, onToggleFavorite, onReorder }) {
   const previewIngredients = recipe.ingredients.slice(0, 3);
   const more = recipe.ingredients.length - previewIngredients.length;
   const isDrink = recipe.type === 'drink';
@@ -13,6 +13,12 @@ export default function RecipeCard({ recipe, onToggleFavorite }) {
     e.preventDefault();
     e.stopPropagation();
     onToggleFavorite?.(recipe.id);
+  }
+
+  function handleReorder(e, dir) {
+    e.preventDefault();
+    e.stopPropagation();
+    onReorder?.(recipe.id, dir);
   }
 
   return (
@@ -38,6 +44,22 @@ export default function RecipeCard({ recipe, onToggleFavorite }) {
           >
             {recipe.is_favorite ? '★' : '☆'}
           </button>
+        )}
+        {onReorder && (
+          <div className="card-reorder-btns">
+            <button
+              type="button"
+              className="card-reorder-btn"
+              onClick={(e) => handleReorder(e, 'up')}
+              title="Move up"
+            >▲</button>
+            <button
+              type="button"
+              className="card-reorder-btn"
+              onClick={(e) => handleReorder(e, 'down')}
+              title="Move down"
+            >▼</button>
+          </div>
         )}
       </div>
       <div className="card-body">

@@ -74,6 +74,25 @@ export default function Home() {
     setRecipes((prev) => prev.map((r) => r.id === id ? { ...r, is_favorite } : r));
   }
 
+  async function handleReorder(id, direction) {
+    try {
+      const result = await api.reorderRecipe(id, direction);
+      if (!result.ok) return;
+      setRecipes((prev) => {
+        const updated = prev.map((r) => {
+          if (r.id === result.id) return { ...r, sort_order: result.sort_order };
+          if (r.id === result.neighbor_id) return { ...r, sort_order: result.neighbor_sort_order };
+          return r;
+        });
+        return [...updated].sort((a, b) =>
+          b.sort_order !== a.sort_order
+            ? b.sort_order - a.sort_order
+            : a.title.localeCompare(b.title)
+        );
+      });
+    } catch (_) {}
+  }
+
   const displayed = searchTerms.length > 0
     ? recipes.filter((r) => r.type !== 'drink')
     : recipes.filter((r) => {
@@ -154,7 +173,7 @@ export default function Home() {
                 <h2 className="recipe-section-title">{group.label}</h2>
                 <div className="recipe-grid">
                   {items.map((r) => (
-                    <RecipeCard key={r.id} recipe={r} onToggleFavorite={handleToggleFavorite} />
+                    <RecipeCard key={r.id} recipe={r} onToggleFavorite={handleToggleFavorite} onReorder={handleReorder} />
                   ))}
                 </div>
               </div>
@@ -164,7 +183,7 @@ export default function Home() {
       ) : !loading && !error && displayed.length > 0 ? (
         <div className="recipe-grid">
           {displayed.map((r) => (
-            <RecipeCard key={r.id} recipe={r} onToggleFavorite={handleToggleFavorite} />
+            <RecipeCard key={r.id} recipe={r} onToggleFavorite={handleToggleFavorite} onReorder={handleReorder} />
           ))}
         </div>
       ) : null}

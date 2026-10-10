@@ -20,6 +20,13 @@ export const api = {
   promoteRecipe: (id) =>
     fetch(`${BASE}/recipes/${id}/promote`, { method: 'PATCH' }).then(json),
 
+  reorderRecipe: (id, direction) =>
+    fetch(`${BASE}/recipes/${id}/reorder`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ direction }),
+    }).then(json),
+
   searchRecipes: (q) =>
     fetch(`${BASE}/recipes/search?q=${encodeURIComponent(q)}`).then(json),
 
