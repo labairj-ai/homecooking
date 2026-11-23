@@ -14,7 +14,7 @@ Personal recipe and drink manager split into two siloed sections: **My Kitchen**
 - **Flow Table view** — toggle on any recipe detail page to see a matrix layout: ingredients as rows, cooking steps as columns, with merged cells showing which ingredients combine at each step
 - **Cook Mode** — full-screen step-by-step overlay with Wake Lock (keeps screen on)
 - **Grocery List** — add all ingredients from any recipe with one tap; manual add; paste a comma- or newline-separated list; checkbox/clear; swipe-delete with 5-second undo toast
-- **Quick Capture** — import recipes from a URL, scanned photo (via `qwen2.5-vl:7b` vision AI on Ollama), or PDF
+- **Quick Capture** — import recipes from a URL, scanned photo (via `qwen2.5vl:7b` vision AI on Ollama), or PDF
 - **Ask AI** — recipe-aware chat panel on every recipe detail page; streaming tokens with animated thinking indicator; powered by `Qwen3.6-35B-A3B-4bit` (MLX)
 
 ### ✨ What Can I Make? (`/suggest`)
@@ -54,7 +54,7 @@ Staging area for **food recipes only** — cocktails have their own queue in My 
 - **Backend**: Express.js + better-sqlite3
 - **Image uploads**: Multer (stored in `/uploads/`, 20 MB max)
 - **AI — recipe generation & chat**: MLX OpenAI-compatible server (`mlx-community/Qwen3.6-35B-A3B-4bit` for recipe generation and Ask AI chat; `mlx-community/phi-4-4bit` for concept suggestions). Set `LLM_URL` env var (default `http://localhost:8080`).
-- **AI — image parsing**: [Ollama](https://ollama.com) — `qwen2.5-vl:7b` for photo Quick Capture. Set `OLLAMA_URL` (default `http://localhost:11434`).
+- **AI — image parsing**: [Ollama](https://ollama.com) — `qwen2.5vl:7b` for photo Quick Capture. Set `OLLAMA_URL` (default `http://localhost:11434`) and optionally `OLLAMA_VISION_MODEL` to an installed vision model.
 - **URL import**: direct fetch with browser headers → [Jina Reader](https://jina.ai/reader/) markdown fallback → Playwright headless Chromium fallback for JS-challenge sites
 
 ## Dev setup
@@ -68,7 +68,7 @@ Runs the Express server and Vite dev server concurrently.
 
 AI features require:
 - **Recipe generation & Ask AI**: MLX server running `Qwen3.6-35B-A3B-4bit` and `phi-4-4bit`. Set `LLM_URL`.
-- **Photo Quick Capture**: Ollama with `qwen2.5-vl:7b` pulled. Set `OLLAMA_URL` if not on localhost.
+- **Photo Quick Capture**: Ollama with `qwen2.5vl:7b` pulled. Set `OLLAMA_URL` if not on localhost.
 
 ## Deploy
 
